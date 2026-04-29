@@ -4,18 +4,30 @@ SET NAMES utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
-TRUNCATE TABLE reservation_status_history;
-TRUNCATE TABLE reservations;
-TRUNCATE TABLE equipment_instances;
-TRUNCATE TABLE equipment_types;
-TRUNCATE TABLE workstations;
-TRUNCATE TABLE station_types;
-TRUNCATE TABLE laboratories;
-TRUNCATE TABLE student_profiles;
-TRUNCATE TABLE departments;
-TRUNCATE TABLE faculties;
-TRUNCATE TABLE users;
-TRUNCATE TABLE roles;
+DELETE FROM reservation_status_history;
+DELETE FROM reservations;
+DELETE FROM equipment_instances;
+DELETE FROM equipment_types;
+DELETE FROM workstations;
+DELETE FROM station_types;
+DELETE FROM laboratories;
+DELETE FROM student_profiles;
+DELETE FROM departments;
+DELETE FROM faculties;
+DELETE FROM users;
+DELETE FROM roles;
+
+ALTER TABLE reservation_status_history AUTO_INCREMENT = 1;
+ALTER TABLE reservations AUTO_INCREMENT = 1;
+ALTER TABLE equipment_instances AUTO_INCREMENT = 1;
+ALTER TABLE equipment_types AUTO_INCREMENT = 1;
+ALTER TABLE workstations AUTO_INCREMENT = 1;
+ALTER TABLE station_types AUTO_INCREMENT = 1;
+ALTER TABLE laboratories AUTO_INCREMENT = 1;
+ALTER TABLE departments AUTO_INCREMENT = 1;
+ALTER TABLE faculties AUTO_INCREMENT = 1;
+ALTER TABLE users AUTO_INCREMENT = 1;
+ALTER TABLE roles AUTO_INCREMENT = 1;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
