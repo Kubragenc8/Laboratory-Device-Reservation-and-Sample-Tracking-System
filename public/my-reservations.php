@@ -4,6 +4,8 @@ require_once __DIR__ . '/../includes/auth_check.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/reservation_helper.php';
 
+$pageTitle = 'My Reservations';
+
 $userId = getCurrentUserId();
 
 $statusFilter = $_GET['status'] ?? 'all';
@@ -19,29 +21,11 @@ function isFutureReservation(string $startTime): bool
     return strtotime($startTime) > time();
 }
 
+require_once __DIR__ . '/../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>My Reservations - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>My Reservations</h1>
-
-<p>
-    Welcome, <?= htmlspecialchars(getCurrentUserName()) ?>.
-</p>
-
-<p>
-    <a href="dashboard.php">Dashboard</a> |
-    <a href="labs.php">Laboratories</a> |
-    <a href="reserve.php">Create Reservation</a> |
-    <a href="logout.php">Logout</a>
-</p>
-
-<hr>
 
 <h2>Filter</h2>
 
@@ -72,20 +56,28 @@ function isFutureReservation(string $startTime): bool
                 <th>Action</th>
             </tr>
         </thead>
+
         <tbody>
             <?php foreach ($reservations as $reservation): ?>
                 <tr>
                     <td><?= (int) $reservation['reservation_id'] ?></td>
+
                     <td>
                         <?= htmlspecialchars($reservation['lab_code'] . ' - ' . $reservation['lab_name']) ?>
                     </td>
+
                     <td>
                         <?= htmlspecialchars($reservation['station_code'] . ' - ' . $reservation['station_name']) ?>
                     </td>
+
                     <td><?= htmlspecialchars($reservation['start_time']) ?></td>
+
                     <td><?= htmlspecialchars($reservation['end_time']) ?></td>
+
                     <td><?= htmlspecialchars($reservation['status']) ?></td>
+
                     <td><?= htmlspecialchars($reservation['purpose'] ?? '-') ?></td>
+
                     <td>
                         <a href="reservation-detail.php?id=<?= (int) $reservation['reservation_id'] ?>">
                             View Details
@@ -104,5 +96,4 @@ function isFutureReservation(string $startTime): bool
     <p>No reservation found.</p>
 <?php endif; ?>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

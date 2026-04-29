@@ -4,6 +4,8 @@ require_once __DIR__ . '/../includes/auth_check.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/lab_helper.php';
 
+$pageTitle = 'Laboratories';
+
 $filters = [
     'q' => trim($_GET['q'] ?? ''),
     'faculty_id' => $_GET['faculty_id'] ?? '',
@@ -16,28 +18,11 @@ $departments = getActiveDepartments($pdo);
 $labTypes = getLabTypes($pdo);
 $labs = getAllLabs($pdo, $filters);
 
+require_once __DIR__ . '/../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Laboratories - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>Laboratories</h1>
-
-<p>
-    Welcome, <?= htmlspecialchars(getCurrentUserName()) ?>.
-</p>
-
-<p>
-    <a href="dashboard.php">Dashboard</a> |
-    <a href="my-reservations.php">My Reservations</a> |
-    <a href="logout.php">Logout</a>
-</p>
-
-<hr>
 
 <h2>Search and Filter</h2>
 
@@ -59,6 +44,7 @@ $labs = getAllLabs($pdo, $filters);
         <label for="faculty_id">Faculty</label><br>
         <select id="faculty_id" name="faculty_id">
             <option value="">All faculties</option>
+
             <?php foreach ($faculties as $faculty): ?>
                 <option
                     value="<?= (int) $faculty['faculty_id'] ?>"
@@ -76,6 +62,7 @@ $labs = getAllLabs($pdo, $filters);
         <label for="department_id">Department</label><br>
         <select id="department_id" name="department_id">
             <option value="">All departments</option>
+
             <?php foreach ($departments as $department): ?>
                 <option
                     value="<?= (int) $department['department_id'] ?>"
@@ -93,6 +80,7 @@ $labs = getAllLabs($pdo, $filters);
         <label for="lab_type">Laboratory Type</label><br>
         <select id="lab_type" name="lab_type">
             <option value="">All types</option>
+
             <?php foreach ($labTypes as $type): ?>
                 <option
                     value="<?= htmlspecialchars($type['lab_type']) ?>"
@@ -129,19 +117,30 @@ $labs = getAllLabs($pdo, $filters);
                 <th>Action</th>
             </tr>
         </thead>
+
         <tbody>
             <?php foreach ($labs as $lab): ?>
                 <tr>
                     <td><?= htmlspecialchars($lab['lab_code']) ?></td>
+
                     <td><?= htmlspecialchars($lab['lab_name']) ?></td>
+
                     <td><?= htmlspecialchars($lab['faculty_name']) ?></td>
+
                     <td><?= htmlspecialchars($lab['department_name']) ?></td>
+
                     <td><?= htmlspecialchars($lab['lab_type']) ?></td>
+
                     <td><?= htmlspecialchars($lab['location'] ?? '-') ?></td>
+
                     <td><?= (int) $lab['active_station_count'] ?></td>
+
                     <td><?= (int) $lab['total_station_count'] ?></td>
+
                     <td>
-                        <a href="lab-detail.php?id=<?= (int) $lab['lab_id'] ?>">View Details</a>
+                        <a href="lab-detail.php?id=<?= (int) $lab['lab_id'] ?>">
+                            View Details
+                        </a>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -151,5 +150,4 @@ $labs = getAllLabs($pdo, $filters);
     <p>No laboratory found.</p>
 <?php endif; ?>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

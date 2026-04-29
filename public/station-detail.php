@@ -21,22 +21,16 @@ if (!$station) {
 $equipmentList = getStationEquipment($pdo, (int) $stationId);
 $upcomingReservations = getUpcomingReservationsByStation($pdo, (int) $stationId);
 
+$pageTitle = 'Station Detail';
+
+require_once __DIR__ . '/../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Station Detail - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>Station Detail</h1>
 
 <p>
-    <a href="lab-detail.php?id=<?= (int) $station['lab_id'] ?>">Back to Laboratory</a> |
-    <a href="labs.php">Laboratories</a> |
-    <a href="dashboard.php">Dashboard</a> |
-    <a href="logout.php">Logout</a>
+    <a href="lab-detail.php?id=<?= (int) $station['lab_id'] ?>">Back to Laboratory</a>
 </p>
 
 <hr>
@@ -87,6 +81,7 @@ $upcomingReservations = getUpcomingReservationsByStation($pdo, (int) $stationId)
                 <th>Status</th>
             </tr>
         </thead>
+
         <tbody>
             <?php foreach ($equipmentList as $equipment): ?>
                 <tr>
@@ -120,6 +115,7 @@ $upcomingReservations = getUpcomingReservationsByStation($pdo, (int) $stationId)
                 <th>Purpose</th>
             </tr>
         </thead>
+
         <tbody>
             <?php foreach ($upcomingReservations as $reservation): ?>
                 <tr>
@@ -137,5 +133,4 @@ $upcomingReservations = getUpcomingReservationsByStation($pdo, (int) $stationId)
     <p>No upcoming active reservation found for this station.</p>
 <?php endif; ?>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

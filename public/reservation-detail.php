@@ -4,6 +4,8 @@ require_once __DIR__ . '/../includes/auth_check.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/reservation_helper.php';
 
+$pageTitle = 'Reservation Detail';
+
 $userId = getCurrentUserId();
 
 $reservationId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
@@ -85,22 +87,14 @@ $history = getReservationStatusHistory($pdo, (int) $reservationId);
 $canCancel = $reservation['status'] === 'active'
     && isReservationStartInFuture($reservation['start_time']);
 
+require_once __DIR__ . '/../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Reservation Detail - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>Reservation Detail</h1>
 
 <p>
-    <a href="my-reservations.php">Back to My Reservations</a> |
-    <a href="dashboard.php">Dashboard</a> |
-    <a href="labs.php">Laboratories</a> |
-    <a href="logout.php">Logout</a>
+    <a href="my-reservations.php">Back to My Reservations</a>
 </p>
 
 <hr>
@@ -156,6 +150,7 @@ $canCancel = $reservation['status'] === 'active'
                 <th>Note</th>
             </tr>
         </thead>
+
         <tbody>
             <?php foreach ($history as $item): ?>
                 <tr>
@@ -173,5 +168,4 @@ $canCancel = $reservation['status'] === 'active'
     <p>No status history found.</p>
 <?php endif; ?>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

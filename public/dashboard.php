@@ -3,6 +3,8 @@
 require_once __DIR__ . '/../includes/auth_check.php';
 require_once __DIR__ . '/../config/database.php';
 
+$pageTitle = 'Dashboard';
+
 $userId = getCurrentUserId();
 
 $stmt = $pdo->prepare("
@@ -45,14 +47,9 @@ $stmt->execute([
 
 $nextReservation = $stmt->fetch();
 
+require_once __DIR__ . '/../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>User Dashboard</h1>
 
@@ -83,25 +80,4 @@ $nextReservation = $stmt->fetch();
     <p>No upcoming active reservation found.</p>
 <?php endif; ?>
 
-<hr>
-
-<h2>Session Debug</h2>
-
-<pre><?php print_r($_SESSION); ?></pre>
-
-<hr>
-
-<p>
-    <a href="labs.php">View Laboratories</a>
-</p>
-
-<p>
-    <a href="my-reservations.php">My Reservations</a>
-</p>
-
-<p>
-    <a href="logout.php">Logout</a>
-</p>
-
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

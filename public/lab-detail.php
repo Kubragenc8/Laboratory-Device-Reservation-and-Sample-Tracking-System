@@ -21,21 +21,16 @@ if (!$lab) {
 $stations = getStationsByLab($pdo, (int) $labId);
 $equipmentSummary = getLabEquipmentSummary($pdo, (int) $labId);
 
+$pageTitle = 'Laboratory Detail';
+
+require_once __DIR__ . '/../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Laboratory Detail - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>Laboratory Detail</h1>
 
 <p>
-    <a href="labs.php">Back to Laboratories</a> |
-    <a href="dashboard.php">Dashboard</a> |
-    <a href="logout.php">Logout</a>
+    <a href="labs.php">Back to Laboratories</a>
 </p>
 
 <hr>
@@ -70,6 +65,7 @@ $equipmentSummary = getLabEquipmentSummary($pdo, (int) $labId);
                 <th>Total Count</th>
             </tr>
         </thead>
+
         <tbody>
             <?php foreach ($equipmentSummary as $equipment): ?>
                 <tr>
@@ -101,6 +97,7 @@ $equipmentSummary = getLabEquipmentSummary($pdo, (int) $labId);
                 <th>Action</th>
             </tr>
         </thead>
+
         <tbody>
             <?php foreach ($stations as $station): ?>
                 <tr>
@@ -111,7 +108,9 @@ $equipmentSummary = getLabEquipmentSummary($pdo, (int) $labId);
                     <td><?= htmlspecialchars($station['status']) ?></td>
                     <td><?= (int) $station['equipment_count'] ?></td>
                     <td>
-                        <a href="station-detail.php?id=<?= (int) $station['station_id'] ?>">View Station</a>
+                        <a href="station-detail.php?id=<?= (int) $station['station_id'] ?>">
+                            View Station
+                        </a>
 
                         <?php if ($station['status'] === 'active'): ?>
                             |
@@ -128,5 +127,4 @@ $equipmentSummary = getLabEquipmentSummary($pdo, (int) $labId);
     <p>No station found for this laboratory.</p>
 <?php endif; ?>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

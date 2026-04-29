@@ -13,8 +13,9 @@ if (isLoggedIn()) {
     exit;
 }
 
+$pageTitle = 'Register';
+
 $errors = [];
-$successMessage = '';
 
 $firstName = '';
 $lastName = '';
@@ -237,25 +238,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: login.php?registered=1');
             exit;
         } catch (Exception $e) {
-            $pdo->rollBack();
-
-            if (DEBUG_MODE) {
-                $errors[] = 'Registration failed: ' . $e->getMessage();
-            } else {
-                $errors[] = 'Registration failed. Please try again.';
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
             }
+
+            $errors[] = DEBUG_MODE
+                ? 'Registration failed: ' . $e->getMessage()
+                : 'Registration failed. Please try again.';
         }
     }
 }
 
+require_once __DIR__ . '/../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Register - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>Register</h1>
 
@@ -338,6 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label for="faculty_id">Faculty</label><br>
         <select id="faculty_id" name="faculty_id" required>
             <option value="">Select faculty</option>
+
             <?php foreach ($faculties as $faculty): ?>
                 <option
                     value="<?= (int) $faculty['faculty_id'] ?>"
@@ -355,6 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label for="department_id">Department</label><br>
         <select id="department_id" name="department_id" required>
             <option value="">Select department</option>
+
             <?php foreach ($departments as $department): ?>
                 <option
                     value="<?= (int) $department['department_id'] ?>"
@@ -372,6 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label for="class_year">Class Year</label><br>
         <select id="class_year" name="class_year" required>
             <option value="">Select class year</option>
+
             <?php for ($i = 1; $i <= 6; $i++): ?>
                 <option
                     value="<?= $i ?>"
@@ -430,5 +429,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <a href="login.php">Login</a>
 </p>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

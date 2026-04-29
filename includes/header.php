@@ -28,4 +28,4 @@ $bodyClass = $isAdminArea ? 'admin-area' : 'user-area';
 
 <?php require_once __DIR__ . '/navbar.php'; ?>
 
-<main class="page-content"></main>
+<main class="page-content">

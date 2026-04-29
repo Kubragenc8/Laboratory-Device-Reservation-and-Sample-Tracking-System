@@ -5,6 +5,8 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../helpers/reservation_helper.php';
 require_once __DIR__ . '/../../helpers/lab_helper.php';
 
+$pageTitle = 'Admin Reservations';
+
 $adminUserId = getCurrentUserId();
 
 $message = '';
@@ -103,29 +105,11 @@ function canAdminUpdateReservation(array $reservation): bool
     return $reservation['status'] === 'active';
 }
 
+require_once __DIR__ . '/../../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Reservations - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>Admin Reservations</h1>
-
-<p>
-    Welcome, <?= htmlspecialchars(getCurrentUserName()) ?>.
-</p>
-
-<p>
-    <a href="index.php">Admin Dashboard</a> |
-    <a href="../dashboard.php">User Dashboard</a> |
-    <a href="../labs.php">Laboratories</a> |
-    <a href="../logout.php">Logout</a>
-</p>
-
-<hr>
 
 <?php if ($message !== ''): ?>
     <p style="color: <?= $messageStatus ? 'green' : 'red' ?>;">
@@ -153,6 +137,7 @@ function canAdminUpdateReservation(array $reservation): bool
         <label for="status">Status</label><br>
         <select id="status" name="status">
             <option value="">All statuses</option>
+
             <?php foreach ($statusOptions as $status): ?>
                 <option
                     value="<?= htmlspecialchars($status) ?>"
@@ -170,6 +155,7 @@ function canAdminUpdateReservation(array $reservation): bool
         <label for="lab_id">Laboratory</label><br>
         <select id="lab_id" name="lab_id">
             <option value="">All laboratories</option>
+
             <?php foreach ($labs as $lab): ?>
                 <option
                     value="<?= (int) $lab['lab_id'] ?>"
@@ -236,6 +222,7 @@ function canAdminUpdateReservation(array $reservation): bool
                 <th>Admin Action</th>
             </tr>
         </thead>
+
         <tbody>
             <?php foreach ($reservations as $reservation): ?>
                 <tr>
@@ -269,7 +256,11 @@ function canAdminUpdateReservation(array $reservation): bool
 
                     <td>
                         <?php if (canAdminUpdateReservation($reservation)): ?>
-                            <form method="POST" action="" onsubmit="return confirm('Are you sure you want to update this reservation status?');">
+                            <form
+                                method="POST"
+                                action=""
+                                onsubmit="return confirm('Are you sure you want to update this reservation status?');"
+                            >
                                 <input
                                     type="hidden"
                                     name="reservation_id"
@@ -302,5 +293,4 @@ function canAdminUpdateReservation(array $reservation): bool
     <p>No reservation found.</p>
 <?php endif; ?>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>

@@ -3,6 +3,8 @@
 require_once __DIR__ . '/../../includes/admin_check.php';
 require_once __DIR__ . '/../../config/database.php';
 
+$pageTitle = 'Admin Dashboard';
+
 $totalUsers = (int) $pdo->query("SELECT COUNT(*) AS total FROM users")->fetch()['total'];
 $totalLabs = (int) $pdo->query("SELECT COUNT(*) AS total FROM laboratories")->fetch()['total'];
 $totalStations = (int) $pdo->query("SELECT COUNT(*) AS total FROM workstations")->fetch()['total'];
@@ -35,14 +37,9 @@ $stmt = $pdo->query("
 
 $latestReservations = $stmt->fetchAll();
 
+require_once __DIR__ . '/../../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>Admin Dashboard</h1>
 
@@ -96,21 +93,4 @@ $latestReservations = $stmt->fetchAll();
     <p>No reservation found.</p>
 <?php endif; ?>
 
-<hr>
-
-<h2>Session Debug</h2>
-
-<pre><?php print_r($_SESSION); ?></pre>
-
-<hr>
-
-<p>
-    <a href="../dashboard.php">User Dashboard</a>
-</p>
-
-<p>
-    <a href="../logout.php">Logout</a>
-</p>
-
-</body>
-</html>
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>

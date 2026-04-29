@@ -12,7 +12,7 @@ if (isLoggedIn()) {
     exit;
 }
 
-
+$pageTitle = 'Login';
 
 $error = '';
 $successMessage = '';
@@ -77,14 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+require_once __DIR__ . '/../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Login - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>Login</h1>
 
@@ -134,6 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <a href="register.php">Create an account</a>
 </p>
 
+<hr>
+
 <p>
     Test admin account: admin@lab.local / 123456
 </p>
@@ -142,5 +139,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Test student account: onur.demo@ogrenci.karabuk.edu.tr / 123456
 </p>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

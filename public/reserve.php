@@ -100,7 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $messageStatus = true;
                     $message = 'Reservation created successfully.';
                 } catch (Exception $e) {
-                    $pdo->rollBack();
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
 
                     $messageStatus = false;
                     $message = DEBUG_MODE
@@ -120,25 +122,13 @@ function selectedOption($currentValue, $expectedValue): string
     return (string) $currentValue === (string) $expectedValue ? 'selected' : '';
 }
 
+$pageTitle = 'Reserve Station';
+
+require_once __DIR__ . '/../includes/header.php';
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Reserve Station - Laboratory Reservation System</title>
-</head>
-<body>
 
 <h1>Reserve Station</h1>
-
-<p>
-    <a href="labs.php">Laboratories</a> |
-    <a href="dashboard.php">Dashboard</a> |
-    <a href="my-reservations.php">My Reservations</a> |
-    <a href="logout.php">Logout</a>
-</p>
-
-<hr>
 
 <h2>Select Laboratory and Station</h2>
 
@@ -147,6 +137,7 @@ function selectedOption($currentValue, $expectedValue): string
         <label for="lab_id">Laboratory</label><br>
         <select id="lab_id" name="lab_id" required>
             <option value="">Select laboratory</option>
+
             <?php foreach ($labs as $lab): ?>
                 <option
                     value="<?= (int) $lab['lab_id'] ?>"
@@ -173,6 +164,7 @@ function selectedOption($currentValue, $expectedValue): string
             <label for="station_id">Station</label><br>
             <select id="station_id" name="station_id" required>
                 <option value="">Select station</option>
+
                 <?php foreach ($stations as $station): ?>
                     <option
                         value="<?= (int) $station['station_id'] ?>"
@@ -239,6 +231,7 @@ function selectedOption($currentValue, $expectedValue): string
                     <th>Purpose</th>
                 </tr>
             </thead>
+
             <tbody>
                 <?php foreach ($conflicts as $conflict): ?>
                     <tr>
@@ -304,5 +297,4 @@ function selectedOption($currentValue, $expectedValue): string
     <p style="color: red;">Station not found.</p>
 <?php endif; ?>
 
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>
