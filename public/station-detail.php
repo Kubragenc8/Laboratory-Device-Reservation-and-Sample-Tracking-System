@@ -3,6 +3,9 @@
 require_once __DIR__ . '/../includes/auth_check.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/lab_helper.php';
+require_once __DIR__ . '/../helpers/reservation_helper.php';
+
+syncExpiredReservations($pdo);
 
 $stationId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
@@ -19,7 +22,9 @@ if (!$station) {
 }
 
 $equipmentList = getStationEquipment($pdo, (int) $stationId);
-$upcomingReservations = getUpcomingReservationsByStation($pdo, (int) $stationId);
+$equipmentSummary = getStationEquipmentSummary($pdo, (int) $stationId);
+$availability = getStationComputedAvailability($pdo, (int) $stationId);
+$upcomingReservations = getUpcomingReservationsByStation($pdo, (int) $stationId, 10);
 
 $pageTitle = 'Station Detail';
 $pageCss = 'labs.css';
@@ -40,7 +45,6 @@ require_once __DIR__ . '/../includes/header.php';
 
         <!-- HERO -->
         <div class="card" style="margin-bottom:32px;">
-
             <div class="grid grid-2" style="align-items:start;">
 
                 <div>
@@ -56,6 +60,20 @@ require_once __DIR__ . '/../includes/header.php';
                         <?= nl2br(htmlspecialchars($station['notes'] ?? 'No notes available.')) ?>
                     </p>
 
+                    <?php if ($availability['status_label'] === 'Available'): ?>
+                        <div class="alert alert-success" style="margin-bottom:16px;">
+                            This station is currently available.
+                        </div>
+                    <?php elseif ($availability['status_label'] === 'Reserved Now'): ?>
+                        <div class="alert alert-error" style="margin-bottom:16px;">
+                            This station is currently reserved, but you may still create a reservation for a future available time interval.
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-error" style="margin-bottom:16px;">
+                            <?= htmlspecialchars($availability['reason']) ?>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if ($station['status'] === 'active'): ?>
                         <a
                             href="reserve.php?lab_id=<?= (int) $station['lab_id'] ?>&station_id=<?= (int) $station['station_id'] ?>"
@@ -68,24 +86,56 @@ require_once __DIR__ . '/../includes/header.php';
                             This station is currently not available for reservation.
                         </div>
                     <?php endif; ?>
-
                 </div>
 
                 <div class="card" style="background:var(--color-surface-soft);">
-
-                    <p><strong>Laboratory:</strong> <?= htmlspecialchars($station['lab_name']) ?></p>
-                    <p><strong>Lab Code:</strong> <?= htmlspecialchars($station['lab_code']) ?></p>
-                    <p><strong>Lab Type:</strong> <?= htmlspecialchars($station['lab_type']) ?></p>
-                    <p><strong>Faculty:</strong> <?= htmlspecialchars($station['faculty_name']) ?></p>
-                    <p><strong>Department:</strong> <?= htmlspecialchars($station['department_name']) ?></p>
-                    <p><strong>Location:</strong> <?= htmlspecialchars($station['location'] ?? '-') ?></p>
-                    <p><strong>Station Type:</strong> <?= htmlspecialchars($station['type_name']) ?></p>
-                    <p><strong>Capacity:</strong> <?= (int) $station['capacity'] ?></p>
+                    <p>
+                        <strong>Laboratory:</strong>
+                        <?= htmlspecialchars($station['lab_name']) ?>
+                    </p>
 
                     <p>
-                        <strong>Status:</strong>
+                        <strong>Lab Code:</strong>
+                        <?= htmlspecialchars($station['lab_code']) ?>
+                    </p>
+
+                    <p>
+                        <strong>Lab Type:</strong>
+                        <?= htmlspecialchars($station['lab_type']) ?>
+                    </p>
+
+                    <p>
+                        <strong>Faculty:</strong>
+                        <?= htmlspecialchars($station['faculty_name']) ?>
+                    </p>
+
+                    <p>
+                        <strong>Department:</strong>
+                        <?= htmlspecialchars($station['department_name']) ?>
+                    </p>
+
+                    <p>
+                        <strong>Location:</strong>
+                        <?= htmlspecialchars($station['location'] ?? '-') ?>
+                    </p>
+
+                    <p>
+                        <strong>Station Type:</strong>
+                        <?= htmlspecialchars($station['type_name']) ?>
+                    </p>
+
+                    <p>
+                        <strong>Capacity:</strong>
+                        <?= (int) $station['capacity'] ?>
+                    </p>
+
+                    <p>
+                        <strong>System Status:</strong>
+
                         <?php if ($station['status'] === 'active'): ?>
-                            <span class="badge badge-success">Active</span>
+                            <span class="badge badge-success">
+                                Active
+                            </span>
                         <?php else: ?>
                             <span class="badge badge-warning">
                                 <?= htmlspecialchars($station['status']) ?>
@@ -93,19 +143,109 @@ require_once __DIR__ . '/../includes/header.php';
                         <?php endif; ?>
                     </p>
 
+                    <p>
+                        <strong>Live Availability:</strong>
+
+                        <?php if ($availability['is_available']): ?>
+                            <span class="badge badge-success">
+                                <?= htmlspecialchars($availability['status_label']) ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="badge badge-warning">
+                                <?= htmlspecialchars($availability['status_label']) ?>
+                            </span>
+                        <?php endif; ?>
+                    </p>
                 </div>
 
             </div>
+        </div>
 
+        <!-- CURRENT RESERVATION -->
+        <?php if (!empty($availability['current_reservation'])): ?>
+            <?php $currentReservation = $availability['current_reservation']; ?>
+
+            <div class="card" style="margin-bottom:32px;">
+                <h2 style="margin-top:0;">Current Active Reservation</h2>
+
+                <div class="grid grid-2">
+                    <div>
+                        <p>
+                            <strong>Reservation ID:</strong>
+                            <?= (int) $currentReservation['reservation_id'] ?>
+                        </p>
+
+                        <p>
+                            <strong>User:</strong>
+                            <?= htmlspecialchars($currentReservation['user_full_name']) ?>
+                        </p>
+
+                        <p>
+                            <strong>Email:</strong>
+                            <?= htmlspecialchars($currentReservation['user_email'] ?? '-') ?>
+                        </p>
+                    </div>
+
+                    <div>
+                        <p>
+                            <strong>Start Time:</strong>
+                            <?= htmlspecialchars($currentReservation['start_time']) ?>
+                        </p>
+
+                        <p>
+                            <strong>End Time:</strong>
+                            <?= htmlspecialchars($currentReservation['end_time']) ?>
+                        </p>
+
+                        <p>
+                            <strong>Purpose:</strong>
+                            <?= htmlspecialchars($currentReservation['purpose'] ?? '-') ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <!-- EQUIPMENT SUMMARY -->
+        <div class="card" style="margin-bottom:32px;">
+            <h2 style="margin-top:0;">Equipment Summary</h2>
+
+            <div class="grid grid-4">
+                <div class="card" style="background:var(--color-surface-soft);">
+                    <p style="margin-bottom:8px;">Total Equipment</p>
+                    <h3 style="margin:0;">
+                        <?= (int) $equipmentSummary['total_equipment_count'] ?>
+                    </h3>
+                </div>
+
+                <div class="card" style="background:var(--color-surface-soft);">
+                    <p style="margin-bottom:8px;">Available</p>
+                    <h3 style="margin:0;">
+                        <?= (int) $equipmentSummary['available_equipment_count'] ?>
+                    </h3>
+                </div>
+
+                <div class="card" style="background:var(--color-surface-soft);">
+                    <p style="margin-bottom:8px;">Maintenance</p>
+                    <h3 style="margin:0;">
+                        <?= (int) $equipmentSummary['maintenance_equipment_count'] ?>
+                    </h3>
+                </div>
+
+                <div class="card" style="background:var(--color-surface-soft);">
+                    <p style="margin-bottom:8px;">Passive</p>
+                    <h3 style="margin:0;">
+                        <?= (int) $equipmentSummary['passive_equipment_count'] ?>
+                    </h3>
+                </div>
+            </div>
         </div>
 
         <!-- EQUIPMENT -->
         <div class="card" style="margin-bottom:32px;">
-
             <h2 style="margin-top:0;">Equipment in This Station</h2>
 
             <?php if (count($equipmentList) > 0): ?>
-
                 <div class="table-wrapper">
                     <table class="table">
                         <thead>
@@ -127,30 +267,34 @@ require_once __DIR__ . '/../includes/header.php';
                                     <td><?= htmlspecialchars($equipment['category']) ?></td>
                                     <td><?= htmlspecialchars($equipment['brand'] ?? '-') ?></td>
                                     <td><?= htmlspecialchars($equipment['model'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($equipment['status']) ?></td>
+                                    <td>
+                                        <?php if ($equipment['status'] === 'available'): ?>
+                                            <span class="badge badge-success">
+                                                Available
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge badge-warning">
+                                                <?= htmlspecialchars($equipment['status']) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
-
             <?php else: ?>
-
                 <div class="alert alert-success">
                     No equipment found for this station.
                 </div>
-
             <?php endif; ?>
-
         </div>
 
         <!-- UPCOMING -->
         <div class="card">
-
             <h2 style="margin-top:0;">Upcoming Active Reservations</h2>
 
             <?php if (count($upcomingReservations) > 0): ?>
-
                 <div class="table-wrapper">
                     <table class="table">
                         <thead>
@@ -168,29 +312,38 @@ require_once __DIR__ . '/../includes/header.php';
                             <?php foreach ($upcomingReservations as $reservation): ?>
                                 <tr>
                                     <td><?= (int) $reservation['reservation_id'] ?></td>
-                                    <td><?= htmlspecialchars($reservation['user_full_name']) ?></td>
-                                    <td><?= htmlspecialchars($reservation['start_time']) ?></td>
-                                    <td><?= htmlspecialchars($reservation['end_time']) ?></td>
+
+                                    <td>
+                                        <?= htmlspecialchars($reservation['user_full_name']) ?>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($reservation['start_time']) ?>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($reservation['end_time']) ?>
+                                    </td>
+
                                     <td>
                                         <span class="badge badge-success">
                                             <?= htmlspecialchars($reservation['status']) ?>
                                         </span>
                                     </td>
-                                    <td><?= htmlspecialchars($reservation['purpose'] ?? '-') ?></td>
+
+                                    <td>
+                                        <?= htmlspecialchars($reservation['purpose'] ?? '-') ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
-
             <?php else: ?>
-
                 <div class="alert alert-success">
                     No upcoming active reservation found for this station.
                 </div>
-
             <?php endif; ?>
-
         </div>
 
     </div>

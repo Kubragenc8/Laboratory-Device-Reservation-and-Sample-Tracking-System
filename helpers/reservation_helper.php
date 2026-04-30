@@ -8,11 +8,9 @@ function normalizeDateTimeForDatabase(?string $value): ?string
         return null;
     }
 
-    $value = str_replace('T', ' ', $value);
-
     try {
-        $dateTime = new DateTime($value);
-        return $dateTime->format('Y-m-d H:i:s');
+        $value = str_replace('T', ' ', $value);
+        return (new DateTime($value))->format('Y-m-d H:i:s');
     } catch (Exception $e) {
         return null;
     }
@@ -34,8 +32,12 @@ function isValidReservationInterval(?string $startTime, ?string $endTime): bool
     }
 }
 
-function isReservationStartInFuture(string $startTime): bool
+function isReservationStartInFuture(?string $startTime): bool
 {
+    if ($startTime === null) {
+        return false;
+    }
+
     try {
         $start = new DateTime($startTime);
         $now = new DateTime();
@@ -46,24 +48,50 @@ function isReservationStartInFuture(string $startTime): bool
     }
 }
 
+function getReservationStatusOptions(): array
+{
+    return [
+        'active',
+        'cancelled',
+        'completed',
+    ];
+}
+
+function isValidReservationStatus(string $status): bool
+{
+    return in_array($status, getReservationStatusOptions(), true);
+}
+
 function getReservationStationContext(PDO $pdo, int $stationId): ?array
 {
     $stmt = $pdo->prepare("
         SELECT
             w.station_id,
             w.lab_id,
+            w.station_type_id,
             w.station_code,
             w.station_name,
             w.capacity,
             w.status AS station_status,
+            w.notes AS station_notes,
+
             st.type_name,
+
             l.lab_name,
             l.lab_code,
             l.lab_type,
             l.location,
+            l.phone,
+            l.description AS lab_description,
             l.is_active AS lab_is_active,
+
+            d.department_id,
             d.department_name,
-            f.faculty_name
+            d.is_active AS department_is_active,
+
+            f.faculty_id,
+            f.faculty_name,
+            f.is_active AS faculty_is_active
         FROM workstations w
         INNER JOIN station_types st
             ON w.station_type_id = st.station_type_id
@@ -78,7 +106,7 @@ function getReservationStationContext(PDO $pdo, int $stationId): ?array
     ");
 
     $stmt->execute([
-        ':station_id' => $stationId
+        ':station_id' => $stationId,
     ]);
 
     $station = $stmt->fetch();
@@ -86,21 +114,26 @@ function getReservationStationContext(PDO $pdo, int $stationId): ?array
     return $station ?: null;
 }
 
-function checkAvailability(PDO $pdo, int $stationId, string $startTime, string $endTime, ?int $excludeReservationId = null): bool
-{
+function checkAvailability(
+    PDO $pdo,
+    int $stationId,
+    string $startTime,
+    string $endTime,
+    ?int $excludeReservationId = null
+): bool {
     $sql = "
         SELECT COUNT(*) AS conflict_count
         FROM reservations
         WHERE station_id = :station_id
-          AND status = 'active'
-          AND start_time < :end_time
-          AND end_time > :start_time
+        AND status = 'active'
+        AND start_time < :end_time
+        AND end_time > :start_time
     ";
 
     $params = [
         ':station_id' => $stationId,
         ':start_time' => $startTime,
-        ':end_time' => $endTime
+        ':end_time' => $endTime,
     ];
 
     if ($excludeReservationId !== null) {
@@ -113,32 +146,41 @@ function checkAvailability(PDO $pdo, int $stationId, string $startTime, string $
 
     $row = $stmt->fetch();
 
-    return (int) $row['conflict_count'] === 0;
+    return (int) ($row['conflict_count'] ?? 0) === 0;
 }
 
-function getConflictingReservations(PDO $pdo, int $stationId, string $startTime, string $endTime, ?int $excludeReservationId = null): array
-{
+function getConflictingReservations(
+    PDO $pdo,
+    int $stationId,
+    string $startTime,
+    string $endTime,
+    ?int $excludeReservationId = null
+): array {
     $sql = "
         SELECT
             r.reservation_id,
+            r.user_id,
+            r.lab_id,
+            r.station_id,
             r.start_time,
             r.end_time,
             r.status,
             r.purpose,
-            CONCAT(u.first_name, ' ', u.last_name) AS user_full_name
+            CONCAT(u.first_name, ' ', u.last_name) AS user_full_name,
+            u.email AS user_email
         FROM reservations r
         INNER JOIN users u
             ON r.user_id = u.user_id
         WHERE r.station_id = :station_id
-          AND r.status = 'active'
-          AND r.start_time < :end_time
-          AND r.end_time > :start_time
+        AND r.status = 'active'
+        AND r.start_time < :end_time
+        AND r.end_time > :start_time
     ";
 
     $params = [
         ':station_id' => $stationId,
         ':start_time' => $startTime,
-        ':end_time' => $endTime
+        ':end_time' => $endTime,
     ];
 
     if ($excludeReservationId !== null) {
@@ -154,8 +196,15 @@ function getConflictingReservations(PDO $pdo, int $stationId, string $startTime,
     return $stmt->fetchAll();
 }
 
-function createReservation(PDO $pdo, int $userId, int $labId, int $stationId, string $startTime, string $endTime, ?string $purpose = null): int
-{
+function createReservation(
+    PDO $pdo,
+    int $userId,
+    int $labId,
+    int $stationId,
+    string $startTime,
+    string $endTime,
+    ?string $purpose = null
+): int {
     $stmt = $pdo->prepare("
         INSERT INTO reservations (
             user_id,
@@ -182,14 +231,20 @@ function createReservation(PDO $pdo, int $userId, int $labId, int $stationId, st
         ':station_id' => $stationId,
         ':start_time' => $startTime,
         ':end_time' => $endTime,
-        ':purpose' => $purpose
+        ':purpose' => $purpose,
     ]);
 
     return (int) $pdo->lastInsertId();
 }
 
-function addReservationStatusHistory(PDO $pdo, int $reservationId, ?string $oldStatus, string $newStatus, int $changedBy, ?string $note = null): void
-{
+function addReservationStatusHistory(
+    PDO $pdo,
+    int $reservationId,
+    ?string $oldStatus,
+    string $newStatus,
+    ?int $changedBy,
+    ?string $note = null
+): void {
     $stmt = $pdo->prepare("
         INSERT INTO reservation_status_history (
             reservation_id,
@@ -211,8 +266,70 @@ function addReservationStatusHistory(PDO $pdo, int $reservationId, ?string $oldS
         ':old_status' => $oldStatus,
         ':new_status' => $newStatus,
         ':changed_by' => $changedBy,
-        ':note' => $note
+        ':note' => $note,
     ]);
+}
+
+function syncExpiredReservations(PDO $pdo, ?int $changedBy = null): int
+{
+    $startedTransaction = !$pdo->inTransaction();
+
+    try {
+        if ($startedTransaction) {
+            $pdo->beginTransaction();
+        }
+
+        $stmt = $pdo->query("
+            SELECT reservation_id
+            FROM reservations
+            WHERE status = 'active'
+            AND end_time < NOW()
+            FOR UPDATE
+        ");
+
+        $expiredReservationIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (empty($expiredReservationIds)) {
+            if ($startedTransaction) {
+                $pdo->commit();
+            }
+
+            return 0;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($expiredReservationIds), '?'));
+
+        $updateStmt = $pdo->prepare("
+            UPDATE reservations
+            SET status = 'completed'
+            WHERE reservation_id IN ($placeholders)
+        ");
+
+        $updateStmt->execute(array_map('intval', $expiredReservationIds));
+
+        foreach ($expiredReservationIds as $reservationId) {
+            addReservationStatusHistory(
+                $pdo,
+                (int) $reservationId,
+                'active',
+                'completed',
+                $changedBy,
+                'Reservation automatically completed because the end time has passed.'
+            );
+        }
+
+        if ($startedTransaction) {
+            $pdo->commit();
+        }
+
+        return count($expiredReservationIds);
+    } catch (Exception $e) {
+        if ($startedTransaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        throw $e;
+    }
 }
 
 function getUserReservations(PDO $pdo, int $userId, string $status = 'all'): array
@@ -229,28 +346,35 @@ function getUserReservations(PDO $pdo, int $userId, string $status = 'all'): arr
             r.status,
             r.created_at,
             r.updated_at,
+
             l.lab_name,
             l.lab_code,
+            l.lab_type,
+            l.location,
+
             w.station_code,
-            w.station_name
+            w.station_name,
+            w.capacity,
+            w.status AS station_status
         FROM reservations r
         INNER JOIN laboratories l
             ON r.lab_id = l.lab_id
         INNER JOIN workstations w
             ON r.station_id = w.station_id
+            AND r.lab_id = w.lab_id
         WHERE r.user_id = :user_id
     ";
 
     $params = [
-        ':user_id' => $userId
+        ':user_id' => $userId,
     ];
 
-    if (in_array($status, ['active', 'cancelled', 'completed'], true)) {
+    if (isValidReservationStatus($status)) {
         $sql .= " AND r.status = :status";
         $params[':status'] = $status;
     }
 
-    $sql .= " ORDER BY r.start_time DESC";
+    $sql .= " ORDER BY r.start_time DESC, r.reservation_id DESC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -272,12 +396,16 @@ function getReservationDetail(PDO $pdo, int $reservationId): ?array
             r.status,
             r.created_at,
             r.updated_at,
+
             CONCAT(u.first_name, ' ', u.last_name) AS user_full_name,
             u.email AS user_email,
+            u.phone AS user_phone,
+
             l.lab_name,
             l.lab_code,
             l.lab_type,
             l.location,
+
             w.station_code,
             w.station_name,
             w.capacity,
@@ -289,12 +417,13 @@ function getReservationDetail(PDO $pdo, int $reservationId): ?array
             ON r.lab_id = l.lab_id
         INNER JOIN workstations w
             ON r.station_id = w.station_id
+            AND r.lab_id = w.lab_id
         WHERE r.reservation_id = :reservation_id
         LIMIT 1
     ");
 
     $stmt->execute([
-        ':reservation_id' => $reservationId
+        ':reservation_id' => $reservationId,
     ]);
 
     $reservation = $stmt->fetch();
@@ -318,11 +447,11 @@ function getReservationStatusHistory(PDO $pdo, int $reservationId): array
         LEFT JOIN users u
             ON h.changed_by = u.user_id
         WHERE h.reservation_id = :reservation_id
-        ORDER BY h.changed_at DESC
+        ORDER BY h.changed_at DESC, h.history_id DESC
     ");
 
     $stmt->execute([
-        ':reservation_id' => $reservationId
+        ':reservation_id' => $reservationId,
     ]);
 
     return $stmt->fetchAll();
@@ -334,10 +463,11 @@ function cancelReservation(PDO $pdo, int $reservationId): void
         UPDATE reservations
         SET status = 'cancelled'
         WHERE reservation_id = :reservation_id
+        AND status = 'active'
     ");
 
     $stmt->execute([
-        ':reservation_id' => $reservationId
+        ':reservation_id' => $reservationId,
     ]);
 }
 
@@ -355,10 +485,13 @@ function getAdminReservations(PDO $pdo, array $filters = []): array
             r.status,
             r.created_at,
             r.updated_at,
+
             CONCAT(u.first_name, ' ', u.last_name) AS user_full_name,
             u.email AS user_email,
+
             l.lab_name,
             l.lab_code,
+
             w.station_code,
             w.station_name
         FROM reservations r
@@ -368,23 +501,24 @@ function getAdminReservations(PDO $pdo, array $filters = []): array
             ON r.lab_id = l.lab_id
         INNER JOIN workstations w
             ON r.station_id = w.station_id
+            AND r.lab_id = w.lab_id
         WHERE 1 = 1
     ";
 
     $params = [];
 
-    if (!empty($filters['status']) && in_array($filters['status'], ['active', 'cancelled', 'completed'], true)) {
+    if (!empty($filters['status']) && isValidReservationStatus($filters['status'])) {
         $sql .= " AND r.status = :status";
         $params[':status'] = $filters['status'];
     }
 
-    if (!empty($filters['lab_id'])) {
+    if (!empty($filters['lab_id']) && filter_var($filters['lab_id'], FILTER_VALIDATE_INT)) {
         $sql .= " AND r.lab_id = :lab_id";
         $params[':lab_id'] = (int) $filters['lab_id'];
     }
 
     if (!empty($filters['q'])) {
-        $searchValue = '%' . $filters['q'] . '%';
+        $searchValue = '%' . trim($filters['q']) . '%';
 
         $sql .= "
             AND (
@@ -408,13 +542,21 @@ function getAdminReservations(PDO $pdo, array $filters = []): array
     }
 
     if (!empty($filters['date_from'])) {
-        $sql .= " AND r.start_time >= :date_from";
-        $params[':date_from'] = $filters['date_from'] . ' 00:00:00';
+        $dateFrom = normalizeDateTimeForDatabase($filters['date_from'] . ' 00:00:00');
+
+        if ($dateFrom !== null) {
+            $sql .= " AND r.start_time >= :date_from";
+            $params[':date_from'] = $dateFrom;
+        }
     }
 
     if (!empty($filters['date_to'])) {
-        $sql .= " AND r.start_time <= :date_to";
-        $params[':date_to'] = $filters['date_to'] . ' 23:59:59';
+        $dateTo = normalizeDateTimeForDatabase($filters['date_to'] . ' 23:59:59');
+
+        if ($dateTo !== null) {
+            $sql .= " AND r.start_time <= :date_to";
+            $params[':date_to'] = $dateTo;
+        }
     }
 
     $sql .= " ORDER BY r.start_time DESC, r.reservation_id DESC";
@@ -427,6 +569,10 @@ function getAdminReservations(PDO $pdo, array $filters = []): array
 
 function updateReservationStatus(PDO $pdo, int $reservationId, string $newStatus): void
 {
+    if (!isValidReservationStatus($newStatus)) {
+        throw new InvalidArgumentException('Invalid reservation status.');
+    }
+
     $stmt = $pdo->prepare("
         UPDATE reservations
         SET status = :new_status
@@ -435,11 +581,6 @@ function updateReservationStatus(PDO $pdo, int $reservationId, string $newStatus
 
     $stmt->execute([
         ':new_status' => $newStatus,
-        ':reservation_id' => $reservationId
+        ':reservation_id' => $reservationId,
     ]);
-}
-
-function getReservationStatusOptions(): array
-{
-    return ['active', 'cancelled', 'completed'];
 }

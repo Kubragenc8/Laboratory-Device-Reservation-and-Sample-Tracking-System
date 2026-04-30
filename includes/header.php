@@ -35,6 +35,9 @@ $bodyClass = $isAdminArea ? 'admin-area' : 'user-area';
     <?php if (!empty($pageCss)): ?>
         <link rel="stylesheet" href="<?= ASSETS_URL ?>css/<?= htmlspecialchars($pageCss) ?>">
     <?php endif; ?>
+
+    <!-- Stable Navbar Override -->
+    <link rel="stylesheet" href="<?= ASSETS_URL ?>css/navbar.css">
 </head>
 <body class="<?= htmlspecialchars($bodyClass) ?>">
 

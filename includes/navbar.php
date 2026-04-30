@@ -21,100 +21,182 @@ if ($isLoggedIn && $isAdmin) {
     $brandUrl = BASE_URL . 'admin/index.php';
 }
 
+$userName = $isLoggedIn ? getCurrentUserName() : '';
+$userRole = $_SESSION['role_name'] ?? 'user';
+
 ?>
 <header class="topbar">
-    <div class="container">
+    <div class="topbar-shell">
 
         <div class="topbar-inner">
 
             <!-- BRAND -->
-            <div class="topbar-left">
+            <a class="brand" href="<?= htmlspecialchars($brandUrl) ?>">
+                <span class="brand-mark">LAB</span>
 
-                <a class="brand" href="<?= $brandUrl ?>">
-                    <span class="brand-mark">LAB</span>
-                    <span class="brand-text">
-                        <?= htmlspecialchars(APP_NAME) ?>
-                    </span>
-                </a>
+                <span class="brand-text">
+                    <?= htmlspecialchars(APP_NAME) ?>
+                </span>
+            </a>
 
-            </div>
+            <!-- PURE CSS MOBILE TOGGLE -->
+            <input
+                type="checkbox"
+                id="mobile-nav-toggle"
+                class="mobile-nav-checkbox"
+                aria-hidden="true"
+            >
+
+            <label
+                for="mobile-nav-toggle"
+                class="mobile-menu-btn"
+                aria-label="Toggle navigation"
+            >
+                Menu
+            </label>
 
             <!-- NAVIGATION -->
-            <nav class="nav-links" data-mobile-menu>
+            <nav class="nav-links" aria-label="Main navigation">
 
-                <!-- PUBLIC -->
-                <a class="<?= navLinkActive('/public/index.php') ?>" href="<?= BASE_URL ?>index.php">
+                <!-- PUBLIC LINKS -->
+                <a
+                    class="<?= navLinkActive('/public/index.php') ?>"
+                    href="<?= BASE_URL ?>index.php"
+                >
                     Home
                 </a>
 
-                <a class="<?= navLinkActive('/public/labs.php') ?>" href="<?= BASE_URL ?>labs.php">
+                <a
+                    class="<?= navLinkActive('/public/labs.php') ?>"
+                    href="<?= BASE_URL ?>labs.php"
+                >
                     Laboratories
                 </a>
 
                 <?php if (!$isLoggedIn): ?>
 
-                    <a class="<?= navLinkActive('/public/login.php') ?>" href="<?= BASE_URL ?>login.php">
+                    <!-- GUEST LINKS -->
+                    <a
+                        class="<?= navLinkActive('/public/login.php') ?>"
+                        href="<?= BASE_URL ?>login.php"
+                    >
                         Login
                     </a>
 
-                    <a class="btn btn-primary nav-cta" href="<?= BASE_URL ?>register.php">
+                    <a
+                        class="nav-action primary <?= navLinkActive('/public/register.php') ?>"
+                        href="<?= BASE_URL ?>register.php"
+                    >
                         Register
                     </a>
 
                 <?php else: ?>
 
-                    <!-- USER -->
-                    <a class="<?= navLinkActive('/public/dashboard.php') ?>" href="<?= BASE_URL ?>dashboard.php">
+                    <!-- USER LINKS -->
+                    <a
+                        class="<?= navLinkActive('/public/dashboard.php') ?>"
+                        href="<?= BASE_URL ?>dashboard.php"
+                    >
                         Dashboard
                     </a>
 
-                    <a class="<?= navLinkActive('/public/reserve.php') ?>" href="<?= BASE_URL ?>reserve.php">
+                    <a
+                        class="<?= navLinkActive('/public/reserve.php') ?>"
+                        href="<?= BASE_URL ?>reserve.php"
+                    >
                         Reserve
                     </a>
 
-                    <a class="<?= navLinkActive('/public/my-reservations.php') ?>" href="<?= BASE_URL ?>my-reservations.php">
+                    <a
+                        class="<?= navLinkActive('/public/my-reservations.php') ?>"
+                        href="<?= BASE_URL ?>my-reservations.php"
+                    >
                         My Reservations
                     </a>
 
-                    <a class="<?= navLinkActive('/public/profile.php') ?>" href="<?= BASE_URL ?>profile.php">
+                    <?php if ($isAdmin): ?>
+
+                        <!-- ADMIN TOOLS -->
+                        <details class="nav-dropdown">
+                            <summary class="<?= navLinkActive('/public/admin/') ?>">
+                                Admin Tools
+                            </summary>
+
+                            <div class="nav-dropdown-menu">
+                                <a
+                                    class="<?= navLinkActive('/public/admin/index.php') ?>"
+                                    href="<?= BASE_URL ?>admin/index.php"
+                                >
+                                    Admin Dashboard
+                                </a>
+
+                                <a
+                                    class="<?= navLinkActive('/public/admin/reservations.php') ?>"
+                                    href="<?= BASE_URL ?>admin/reservations.php"
+                                >
+                                    Reservations
+                                </a>
+
+                                <a
+                                    class="<?= navLinkActive('/public/admin/labs.php') ?>"
+                                    href="<?= BASE_URL ?>admin/labs.php"
+                                >
+                                    Laboratories
+                                </a>
+
+                                <a
+                                    class="<?= navLinkActive('/public/admin/stations.php') ?>"
+                                    href="<?= BASE_URL ?>admin/stations.php"
+                                >
+                                    Stations
+                                </a>
+
+                                <a
+                                    class="<?= navLinkActive('/public/admin/equipment.php') ?>"
+                                    href="<?= BASE_URL ?>admin/equipment.php"
+                                >
+                                    Equipment
+                                </a>
+
+                                <a
+                                    class="<?= navLinkActive('/public/admin/users.php') ?>"
+                                    href="<?= BASE_URL ?>admin/users.php"
+                                >
+                                    Users
+                                </a>
+                            </div>
+                        </details>
+
+                    <?php endif; ?>
+
+                    <!-- ACCOUNT LINKS -->
+                    <a
+                        class="<?= navLinkActive('/public/profile.php') ?>"
+                        href="<?= BASE_URL ?>profile.php"
+                    >
                         Profile
                     </a>
 
-                    <!-- ADMIN -->
-                    <?php if ($isAdmin): ?>
-                        <a class="<?= navLinkActive('/public/admin/') ?>" href="<?= BASE_URL ?>admin/index.php">
-                            Admin Panel
-                        </a>
-                    <?php endif; ?>
-
-                    <!-- USER CHIP -->
-                    <div class="nav-user-chip">
+                    <div class="nav-user-chip" title="<?= htmlspecialchars($userName) ?>">
                         <span class="nav-user-name">
-                            <?= htmlspecialchars(getCurrentUserName()) ?>
+                            <?= htmlspecialchars($userName) ?>
                         </span>
 
                         <span class="nav-user-role">
-                            <?= htmlspecialchars($_SESSION['role_name'] ?? 'user') ?>
+                            <?= htmlspecialchars($userRole) ?>
                         </span>
                     </div>
 
-                    <a class="btn btn-outline" href="<?= BASE_URL ?>logout.php">
+                    <a
+                        class="nav-action danger"
+                        href="<?= BASE_URL ?>logout.php"
+                    >
                         Logout
                     </a>
 
                 <?php endif; ?>
 
             </nav>
-
-            <!-- MOBILE BUTTON -->
-            <button
-                class="btn btn-secondary mobile-menu-btn"
-                type="button"
-                data-mobile-toggle
-                aria-label="Toggle navigation"
-            >
-                Menu
-            </button>
 
         </div>
 

@@ -1,0 +1,414 @@
+/* =========================================================
+   Stable Responsive Navbar
+   This file intentionally overrides old header/navbar styles.
+   ========================================================= */
+
+.topbar,
+.topbar * {
+    box-sizing: border-box;
+}
+
+.topbar {
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #273044;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+
+.topbar-shell {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.topbar-inner {
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    position: relative;
+}
+
+/* BRAND */
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 260px;
+    text-decoration: none;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.brand:hover {
+    text-decoration: none;
+    color: #ffffff;
+}
+
+.brand-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #54ded8;
+    color: #071827;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.brand-text {
+    color: #ffffff;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+}
+
+/* NAVIGATION */
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+}
+
+.nav-links a,
+.nav-dropdown summary {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 14px;
+    font-weight: 650;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    transition:
+        background 0.18s ease,
+        color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease;
+}
+
+.nav-links a:hover,
+.nav-dropdown summary:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    text-decoration: none;
+}
+
+.nav-links a.active,
+.nav-dropdown summary.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ACTION BUTTONS */
+
+.nav-links .nav-action {
+    border-radius: 999px;
+    padding: 0 16px;
+    font-weight: 800;
+}
+
+.nav-links .nav-action.primary {
+    color: #071827;
+    background: #54ded8;
+    border-color: #54ded8;
+}
+
+.nav-links .nav-action.primary:hover {
+    color: #071827;
+    background: #6ff1ec;
+}
+
+.nav-links .nav-action.danger {
+    color: #ffffff;
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.nav-links .nav-action.danger:hover {
+    background: rgba(239, 68, 68, 0.28);
+}
+
+/* USER CHIP */
+
+.nav-user-chip {
+    min-height: 44px;
+    max-width: 150px;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+    padding: 6px 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.11);
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.nav-user-name {
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nav-user-role {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.1;
+    color: rgba(255, 255, 255, 0.72);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-transform: capitalize;
+}
+
+/* ADMIN DROPDOWN */
+
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown summary {
+    list-style: none;
+}
+
+.nav-dropdown summary::-webkit-details-marker {
+    display: none;
+}
+
+.nav-dropdown summary::after {
+    content: "▾";
+    font-size: 11px;
+    margin-left: 8px;
+    opacity: 0.8;
+}
+
+.nav-dropdown[open] summary {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.nav-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 220px;
+    padding: 10px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.22);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav-dropdown-menu a {
+    width: 100%;
+    justify-content: flex-start;
+    color: #1f2937;
+    border-radius: 12px;
+    padding: 10px 12px;
+    min-height: 40px;
+}
+
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu a.active {
+    color: #111827;
+    background: #eef7f7;
+}
+
+/* MOBILE TOGGLE */
+
+.mobile-nav-checkbox {
+    display: none;
+}
+
+.mobile-menu-btn {
+    display: none;
+    min-height: 42px;
+    padding: 0 18px;
+    border-radius: 14px;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    color: #1f2937;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+/* MAIN CONTENT SAFETY */
+
+.main-content {
+    width: 100%;
+    min-width: 0;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1180px) {
+    .topbar-shell {
+        padding: 0 16px;
+    }
+
+    .topbar-inner {
+        min-height: 72px;
+        gap: 12px;
+    }
+
+    .brand {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .brand-text {
+        font-size: 17px;
+        max-width: min(62vw, 420px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mobile-menu-btn {
+        display: inline-flex;
+    }
+
+    .nav-links {
+        display: none;
+        position: absolute;
+        top: calc(100% + 12px);
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 1100;
+        padding: 14px;
+        border-radius: 22px;
+        background: #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.22);
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .mobile-nav-checkbox:checked ~ .nav-links {
+        display: flex;
+    }
+
+    .nav-links a,
+    .nav-dropdown summary {
+        width: 100%;
+        justify-content: flex-start;
+        min-height: 44px;
+        color: #1f2937;
+        border-radius: 14px;
+        padding: 0 14px;
+        background: transparent;
+    }
+
+    .nav-links a:hover,
+    .nav-dropdown summary:hover,
+    .nav-links a.active,
+    .nav-dropdown summary.active {
+        color: #111827;
+        background: #eef7f7;
+    }
+
+    .nav-links .nav-action.primary {
+        color: #071827;
+        background: #54ded8;
+        border-color: #54ded8;
+        justify-content: center;
+    }
+
+    .nav-links .nav-action.danger {
+        color: #b91c1c;
+        background: #fee2e2;
+        border-color: #fecaca;
+        justify-content: center;
+    }
+
+    .nav-user-chip {
+        width: 100%;
+        max-width: none;
+        min-height: 50px;
+        border-radius: 16px;
+        background: #f3f4f6;
+        color: #111827;
+    }
+
+    .nav-user-role {
+        color: #6b7280;
+    }
+
+    .nav-dropdown {
+        width: 100%;
+    }
+
+    .nav-dropdown-menu {
+        position: static;
+        min-width: 0;
+        width: 100%;
+        margin-top: 6px;
+        box-shadow: none;
+        border-radius: 16px;
+        background: #f8fafc;
+    }
+
+    .nav-dropdown-menu a {
+        color: #1f2937;
+    }
+}
+
+@media (max-width: 520px) {
+    .topbar-shell {
+        padding: 0 12px;
+    }
+
+    .brand-mark {
+        width: 40px;
+        height: 40px;
+        border-radius: 13px;
+        font-size: 13px;
+    }
+
+    .brand-text {
+        font-size: 15px;
+        max-width: 58vw;
+    }
+
+    .mobile-menu-btn {
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 13px;
+        font-size: 13px;
+    }
+}

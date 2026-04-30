@@ -1,63 +1,90 @@
 <?php
 
+require_once __DIR__ . '/../../includes/auth_check.php';
 require_once __DIR__ . '/../../includes/admin_check.php';
 require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../helpers/reservation_helper.php';
 require_once __DIR__ . '/../../helpers/lab_helper.php';
-
-$pageTitle = 'Admin Reservations';
-$pageCss = 'admin-reservations.css';
+require_once __DIR__ . '/../../helpers/reservation_helper.php';
 
 $adminUserId = getCurrentUserId();
 
-$message = '';
-$messageStatus = null;
+syncExpiredReservations($pdo, (int) $adminUserId);
+
+$pageTitle = 'Reservation Management';
+$pageCss = 'admin.css';
 
 $statusOptions = getReservationStatusOptions();
-
 $labs = getAllLabs($pdo);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$message = '';
+$messageStatus = false;
 
+function selectedAdminOption($currentValue, $expectedValue): string
+{
+    return (string) $currentValue === (string) $expectedValue ? 'selected' : '';
+}
+
+function formatAdminReservationDateTime(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('d.m.Y H:i');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
+function adminReservationBadgeClass(string $status): string
+{
+    if ($status === 'active') {
+        return 'badge-success';
+    }
+
+    if ($status === 'cancelled') {
+        return 'badge-warning';
+    }
+
+    if ($status === 'completed') {
+        return 'badge-secondary';
+    }
+
+    return 'badge-secondary';
+}
+
+function canAdminUpdateReservation(array $reservation): bool
+{
+    return $reservation['status'] === 'active';
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $reservationId = filter_input(INPUT_POST, 'reservation_id', FILTER_VALIDATE_INT);
-    $newStatus = $_POST['new_status'] ?? '';
+    $newStatus = trim($_POST['new_status'] ?? '');
 
     if ($action === 'update_status') {
-
         if (!$reservationId) {
-
+            $messageStatus = false;
             $message = 'Valid reservation ID is required.';
+        } elseif (!isValidReservationStatus($newStatus)) {
             $messageStatus = false;
-
-        } elseif (!in_array($newStatus, $statusOptions, true)) {
-
             $message = 'Invalid reservation status.';
-            $messageStatus = false;
-
         } else {
-
             $reservation = getReservationDetail($pdo, (int) $reservationId);
 
             if (!$reservation) {
-
+                $messageStatus = false;
                 $message = 'Reservation not found.';
+            } elseif (!canAdminUpdateReservation($reservation)) {
                 $messageStatus = false;
-
+                $message = 'Only active reservations can be updated from this page.';
             } elseif ($reservation['status'] === $newStatus) {
-
-                $message = 'Reservation already has this status.';
                 $messageStatus = false;
-
-            } elseif ($reservation['status'] !== 'active') {
-
-                $message = 'Only active reservations can be updated by admin.';
-                $messageStatus = false;
-
+                $message = 'The selected status is already assigned to this reservation.';
             } else {
-
                 try {
-
                     $pdo->beginTransaction();
 
                     $oldStatus = $reservation['status'];
@@ -79,32 +106,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $pdo->commit();
 
-                    $message = 'Reservation status updated successfully.';
                     $messageStatus = true;
-
+                    $message = 'Reservation status updated successfully.';
                 } catch (Exception $e) {
-
                     if ($pdo->inTransaction()) {
                         $pdo->rollBack();
                     }
 
+                    $messageStatus = false;
                     $message = DEBUG_MODE
                         ? 'Reservation status update failed: ' . $e->getMessage()
                         : 'Reservation status update failed.';
-
-                    $messageStatus = false;
                 }
             }
         }
     }
 }
 
+syncExpiredReservations($pdo, (int) $adminUserId);
+
 $filters = [
     'status' => $_GET['status'] ?? '',
     'lab_id' => $_GET['lab_id'] ?? '',
     'q' => trim($_GET['q'] ?? ''),
     'date_from' => $_GET['date_from'] ?? '',
-    'date_to' => $_GET['date_to'] ?? ''
+    'date_to' => $_GET['date_to'] ?? '',
 ];
 
 if (
@@ -123,16 +149,19 @@ if (
 
 $reservations = getAdminReservations($pdo, $filters);
 
-function selectedAdminOption($currentValue, $expectedValue): string
-{
-    return (string) $currentValue === (string) $expectedValue
-        ? 'selected'
-        : '';
-}
+$totalCount = count($reservations);
+$activeCount = 0;
+$cancelledCount = 0;
+$completedCount = 0;
 
-function canAdminUpdateReservation(array $reservation): bool
-{
-    return $reservation['status'] === 'active';
+foreach ($reservations as $reservation) {
+    if ($reservation['status'] === 'active') {
+        $activeCount++;
+    } elseif ($reservation['status'] === 'cancelled') {
+        $cancelledCount++;
+    } elseif ($reservation['status'] === 'completed') {
+        $completedCount++;
+    }
 }
 
 require_once __DIR__ . '/../../includes/header.php';
@@ -144,54 +173,48 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <!-- HERO -->
         <div class="card" style="margin-bottom:32px;">
-
             <h1 class="section-title" style="margin-bottom:8px;">
                 Reservation Governance Center
             </h1>
 
-            <p class="section-subtitle">
-                Monitor all reservations, manage lifecycle states,
-                and control operational reservation activity system-wide.
+            <p class="section-subtitle" style="margin-bottom:0;">
+                Monitor all reservations, manage lifecycle states, and control operational reservation activity system-wide.
             </p>
-
         </div>
 
-        <!-- ALERT -->
+        <!-- MESSAGE -->
         <?php if ($message !== ''): ?>
-            <div class="alert <?= $messageStatus ? 'alert-success' : 'alert-error' ?>" style="margin-bottom:24px;">
+            <div
+                class="alert <?= $messageStatus ? 'alert-success' : 'alert-error' ?>"
+                style="margin-bottom:24px;"
+            >
                 <?= htmlspecialchars($message) ?>
             </div>
         <?php endif; ?>
 
         <!-- FILTERS -->
         <div class="card" style="margin-bottom:32px;">
-
             <h2 style="margin-top:0;">Filters</h2>
 
             <form method="GET" action="">
-
                 <div class="grid grid-3">
-
                     <div class="form-group">
                         <label for="q" class="form-label">Search</label>
+
                         <input
                             type="text"
                             id="q"
                             name="q"
                             class="form-control"
                             value="<?= htmlspecialchars($filters['q']) ?>"
-                            placeholder="User, email, lab, station or purpose"
+                            placeholder="User, email, lab, station, purpose..."
                         >
                     </div>
 
                     <div class="form-group">
                         <label for="status" class="form-label">Status</label>
 
-                        <select
-                            id="status"
-                            name="status"
-                            class="form-control"
-                        >
+                        <select id="status" name="status" class="form-control">
                             <option value="">All statuses</option>
 
                             <?php foreach ($statusOptions as $status): ?>
@@ -199,23 +222,16 @@ require_once __DIR__ . '/../../includes/header.php';
                                     value="<?= htmlspecialchars($status) ?>"
                                     <?= selectedAdminOption($filters['status'], $status) ?>
                                 >
-                                    <?= htmlspecialchars($status) ?>
+                                    <?= htmlspecialchars(ucfirst($status)) ?>
                                 </option>
                             <?php endforeach; ?>
-
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="lab_id" class="form-label">
-                            Laboratory
-                        </label>
+                        <label for="lab_id" class="form-label">Laboratory</label>
 
-                        <select
-                            id="lab_id"
-                            name="lab_id"
-                            class="form-control"
-                        >
+                        <select id="lab_id" name="lab_id" class="form-control">
                             <option value="">All laboratories</option>
 
                             <?php foreach ($labs as $lab): ?>
@@ -223,23 +239,16 @@ require_once __DIR__ . '/../../includes/header.php';
                                     value="<?= (int) $lab['lab_id'] ?>"
                                     <?= selectedAdminOption($filters['lab_id'], $lab['lab_id']) ?>
                                 >
-                                    <?= htmlspecialchars(
-                                        $lab['lab_code'] . ' - ' . $lab['lab_name']
-                                    ) ?>
+                                    <?= htmlspecialchars($lab['lab_code'] . ' - ' . $lab['lab_name']) ?>
                                 </option>
                             <?php endforeach; ?>
-
                         </select>
                     </div>
-
                 </div>
 
                 <div class="grid grid-2">
-
                     <div class="form-group">
-                        <label for="date_from" class="form-label">
-                            Date From
-                        </label>
+                        <label for="date_from" class="form-label">Date From</label>
 
                         <input
                             type="date"
@@ -251,9 +260,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     </div>
 
                     <div class="form-group">
-                        <label for="date_to" class="form-label">
-                            Date To
-                        </label>
+                        <label for="date_to" class="form-label">Date To</label>
 
                         <input
                             type="date"
@@ -263,11 +270,9 @@ require_once __DIR__ . '/../../includes/header.php';
                             value="<?= htmlspecialchars($filters['date_to']) ?>"
                         >
                     </div>
-
                 </div>
 
                 <div class="flex" style="gap:12px; flex-wrap:wrap;">
-
                     <button type="submit" class="btn btn-primary">
                         Apply Filters
                     </button>
@@ -275,36 +280,52 @@ require_once __DIR__ . '/../../includes/header.php';
                     <a href="reservations.php" class="btn btn-outline">
                         Clear Filters
                     </a>
-
                 </div>
-
             </form>
-
         </div>
 
-        <!-- SUMMARY -->
-        <div class="card" style="margin-bottom:32px;">
+        <!-- KPI -->
+        <div class="grid grid-4" style="margin-bottom:32px;">
+            <div class="card card-hover">
+                <h3>Total Shown</h3>
 
-            <h2 style="margin-top:0;">Results Summary</h2>
+                <p style="font-size:36px; font-weight:700; margin:0; color:var(--color-primary);">
+                    <?= (int) $totalCount ?>
+                </p>
+            </div>
 
-            <p style="margin-bottom:0;">
-                Total reservations shown:
-                <strong><?= count($reservations) ?></strong>
-            </p>
+            <div class="card card-hover">
+                <h3>Active</h3>
 
+                <p style="font-size:36px; font-weight:700; margin:0;">
+                    <?= (int) $activeCount ?>
+                </p>
+            </div>
+
+            <div class="card card-hover">
+                <h3>Cancelled</h3>
+
+                <p style="font-size:36px; font-weight:700; margin:0;">
+                    <?= (int) $cancelledCount ?>
+                </p>
+            </div>
+
+            <div class="card card-hover">
+                <h3>Completed</h3>
+
+                <p style="font-size:36px; font-weight:700; margin:0;">
+                    <?= (int) $completedCount ?>
+                </p>
+            </div>
         </div>
 
-        <!-- TABLE -->
+        <!-- LIST -->
         <div class="card">
-
             <h2 style="margin-top:0;">Reservation List</h2>
 
             <?php if (count($reservations) > 0): ?>
-
                 <div class="table-wrapper">
-
                     <table class="table">
-
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -321,11 +342,8 @@ require_once __DIR__ . '/../../includes/header.php';
                         </thead>
 
                         <tbody>
-
                             <?php foreach ($reservations as $reservation): ?>
-
                                 <tr>
-
                                     <td>
                                         <?= (int) $reservation['reservation_id'] ?>
                                     </td>
@@ -335,140 +353,107 @@ require_once __DIR__ . '/../../includes/header.php';
                                     </td>
 
                                     <td>
-                                        <?= htmlspecialchars($reservation['email']) ?>
+                                        <?= htmlspecialchars($reservation['user_email'] ?? '-') ?>
                                     </td>
 
                                     <td>
-                                        <?= htmlspecialchars(
-                                            $reservation['lab_code'] . ' - ' . $reservation['lab_name']
-                                        ) ?>
+                                        <strong>
+                                            <?= htmlspecialchars($reservation['lab_code']) ?>
+                                        </strong>
+
+                                        <br>
+
+                                        <span style="color:var(--color-muted);">
+                                            <?= htmlspecialchars($reservation['lab_name']) ?>
+                                        </span>
                                     </td>
 
                                     <td>
-                                        <?= htmlspecialchars(
-                                            $reservation['station_code'] . ' - ' . $reservation['station_name']
-                                        ) ?>
+                                        <strong>
+                                            <?= htmlspecialchars($reservation['station_code']) ?>
+                                        </strong>
+
+                                        <br>
+
+                                        <span style="color:var(--color-muted);">
+                                            <?= htmlspecialchars($reservation['station_name']) ?>
+                                        </span>
                                     </td>
 
                                     <td>
-                                        <?= htmlspecialchars($reservation['start_time']) ?>
+                                        <?= htmlspecialchars(formatAdminReservationDateTime($reservation['start_time'])) ?>
                                     </td>
 
                                     <td>
-                                        <?= htmlspecialchars($reservation['end_time']) ?>
+                                        <?= htmlspecialchars(formatAdminReservationDateTime($reservation['end_time'])) ?>
                                     </td>
 
                                     <td>
-
-                                        <?php if ($reservation['status'] === 'active'): ?>
-                                            <span class="badge badge-success">
-                                                Active
-                                            </span>
-
-                                        <?php elseif ($reservation['status'] === 'cancelled'): ?>
-                                            <span class="badge badge-warning">
-                                                Cancelled
-                                            </span>
-
-                                        <?php else: ?>
-                                            <span class="badge badge-info">
-                                                <?= htmlspecialchars(
-                                                    ucfirst($reservation['status'])
-                                                ) ?>
-                                            </span>
-                                        <?php endif; ?>
-
+                                        <span class="badge <?= adminReservationBadgeClass($reservation['status']) ?>">
+                                            <?= htmlspecialchars(ucfirst($reservation['status'])) ?>
+                                        </span>
                                     </td>
 
                                     <td>
-                                        <?= htmlspecialchars(
-                                            $reservation['purpose'] ?? '-'
-                                        ) ?>
+                                        <?= htmlspecialchars($reservation['purpose'] ?? '-') ?>
                                     </td>
 
                                     <td>
-
                                         <?php if (canAdminUpdateReservation($reservation)): ?>
-
                                             <form
                                                 method="POST"
-                                                action=""
-                                                class="admin-status-form"
+                                                action="reservations.php?<?= htmlspecialchars(http_build_query($filters)) ?>"
+                                                style="margin:0;"
                                             >
-
-                                                <input
-                                                    type="hidden"
-                                                    name="action"
-                                                    value="update_status"
-                                                >
-
                                                 <input
                                                     type="hidden"
                                                     name="reservation_id"
                                                     value="<?= (int) $reservation['reservation_id'] ?>"
                                                 >
 
-                                                <select
-                                                    name="new_status"
-                                                    class="form-control"
-                                                    required
-                                                >
-                                                    <option value="">
-                                                        Change
-                                                    </option>
-
-                                                    <?php foreach ($statusOptions as $status): ?>
-
-                                                        <?php if ($status !== $reservation['status']): ?>
+                                                <div class="flex" style="gap:8px; flex-wrap:wrap;">
+                                                    <select
+                                                        name="new_status"
+                                                        class="form-control"
+                                                        required
+                                                    >
+                                                        <?php foreach ($statusOptions as $status): ?>
                                                             <option
                                                                 value="<?= htmlspecialchars($status) ?>"
+                                                                <?= selectedAdminOption($reservation['status'], $status) ?>
                                                             >
-                                                                <?= htmlspecialchars($status) ?>
+                                                                <?= htmlspecialchars(ucfirst($status)) ?>
                                                             </option>
-                                                        <?php endif; ?>
+                                                        <?php endforeach; ?>
+                                                    </select>
 
-                                                    <?php endforeach; ?>
-
-                                                </select>
-
-                                                <button
-                                                    type="submit"
-                                                    class="btn btn-secondary"
-                                                    style="margin-top:8px;"
-                                                >
-                                                    Update
-                                                </button>
-
+                                                    <button
+                                                        type="submit"
+                                                        name="action"
+                                                        value="update_status"
+                                                        class="btn btn-primary"
+                                                        onclick="return confirm('Are you sure you want to update this reservation status?');"
+                                                    >
+                                                        Update
+                                                    </button>
+                                                </div>
                                             </form>
-
                                         <?php else: ?>
-
-                                            <span class="badge badge-info">
+                                            <span style="color:var(--color-muted);">
                                                 Locked
                                             </span>
-
                                         <?php endif; ?>
-
                                     </td>
-
                                 </tr>
-
                             <?php endforeach; ?>
-
                         </tbody>
-
                     </table>
-
                 </div>
-
             <?php else: ?>
-
                 <div class="alert alert-success">
                     No reservation found.
                 </div>
-
             <?php endif; ?>
-
         </div>
 
     </div>
