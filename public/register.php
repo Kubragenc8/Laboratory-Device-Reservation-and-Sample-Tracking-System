@@ -14,6 +14,7 @@ if (isLoggedIn()) {
 }
 
 $pageTitle = 'Register';
+$pageCss = 'auth.css';
 
 $errors = [];
 
@@ -42,6 +43,7 @@ $departments = $pdo->query("
 ")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     $firstName = cleanInput($_POST['first_name'] ?? '');
     $lastName = cleanInput($_POST['last_name'] ?? '');
     $email = cleanInput($_POST['email'] ?? '');
@@ -98,79 +100,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Passwords do not match.';
     }
 
-    if (empty($errors)) {
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) AS total
-            FROM users
-            WHERE email = :email
-        ");
+    $stmt = $pdo->prepare("
+        SELECT user_id
+        FROM users
+        WHERE email = :email
+        LIMIT 1
+    ");
 
-        $stmt->execute([
-            ':email' => $email
-        ]);
+    $stmt->execute([
+        ':email' => $email
+    ]);
 
-        if ((int) $stmt->fetch()['total'] > 0) {
-            $errors[] = 'This email is already registered.';
-        }
+    if ($stmt->fetch()) {
+        $errors[] = 'This email is already registered.';
     }
 
     if (empty($errors)) {
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) AS total
-            FROM student_profiles
-            WHERE student_no = :student_no
-        ");
 
-        $stmt->execute([
-            ':student_no' => $studentNo
-        ]);
-
-        if ((int) $stmt->fetch()['total'] > 0) {
-            $errors[] = 'This student number is already registered.';
-        }
-    }
-
-    if (empty($errors)) {
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) AS total
-            FROM departments
-            WHERE department_id = :department_id
-              AND faculty_id = :faculty_id
-              AND is_active = 1
-        ");
-
-        $stmt->execute([
-            ':department_id' => (int) $departmentId,
-            ':faculty_id' => (int) $facultyId
-        ]);
-
-        if ((int) $stmt->fetch()['total'] === 0) {
-            $errors[] = 'Selected department does not belong to the selected faculty.';
-        }
-    }
-
-    if (empty($errors)) {
-        $stmt = $pdo->prepare("
-            SELECT role_id
-            FROM roles
-            WHERE role_name = 'student'
-            LIMIT 1
-        ");
-
-        $stmt->execute();
-        $studentRole = $stmt->fetch();
-
-        if (!$studentRole) {
-            $errors[] = 'Student role was not found.';
-        }
-    }
-
-    if (empty($errors)) {
         try {
+
             $pdo->beginTransaction();
 
-            $salt = generateSalt();
-            $passwordHash = hashPasswordWithSalt($password, $salt);
+            $studentRole = $pdo->query("
+                SELECT role_id
+                FROM roles
+                WHERE role_name = 'student'
+                LIMIT 1
+            ")->fetch();
+
+            if (!$studentRole) {
+                throw new Exception('Student role not found.');
+            }
+
+            $passwordData = hashPassword($password);
+            $passwordHash = $passwordData['hash'];
+            $salt = $passwordData['salt'];
 
             $stmt = $pdo->prepare("
                 INSERT INTO users (
@@ -237,7 +201,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             header('Location: login.php?registered=1');
             exit;
+
         } catch (Exception $e) {
+
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
@@ -253,180 +219,201 @@ require_once __DIR__ . '/../includes/header.php';
 
 ?>
 
-<h1>Register</h1>
+<section class="page-section">
+    <div class="container">
 
-<?php if (!empty($errors)): ?>
-    <div style="color: red;">
-        <ul>
-            <?php foreach ($errors as $error): ?>
-                <li><?= htmlspecialchars($error) ?></li>
-            <?php endforeach; ?>
-        </ul>
+        <div class="grid grid-2" style="align-items:start; gap:48px;">
+
+            <!-- LEFT -->
+            <div>
+
+                <h1 class="section-title" style="font-size:40px;">
+                    Create Your Academic Account
+                </h1>
+
+                <p class="section-subtitle" style="font-size:18px;">
+                    Join the laboratory reservation system to explore laboratories,
+                    select stations, and manage academic reservations professionally.
+                </p>
+
+                <div class="auth-feature-list">
+
+                    <div class="auth-feature-item">
+                        <span class="badge badge-info">1</span>
+                        <span>Register with student identity</span>
+                    </div>
+
+                    <div class="auth-feature-item">
+                        <span class="badge badge-info">2</span>
+                        <span>Select faculty and department</span>
+                    </div>
+
+                    <div class="auth-feature-item">
+                        <span class="badge badge-info">3</span>
+                        <span>Access laboratories and stations</span>
+                    </div>
+
+                    <div class="auth-feature-item">
+                        <span class="badge badge-info">4</span>
+                        <span>Create and manage reservations</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- RIGHT -->
+            <div class="card">
+
+                <h2 style="margin-top:0;">Register</h2>
+
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert-error">
+                        <ul style="margin:0; padding-left:18px;">
+                            <?php foreach ($errors as $error): ?>
+                                <li><?= htmlspecialchars($error) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST" action="">
+
+                    <div class="grid grid-2">
+
+                        <div class="form-group">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" id="first_name" name="first_name" class="form-control" value="<?= htmlspecialchars($firstName) ?>" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" class="form-control" value="<?= htmlspecialchars($lastName) ?>" required>
+                        </div>
+
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" id="email" name="email" class="form-control" value="<?= htmlspecialchars($email) ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="text" id="phone" name="phone" class="form-control" value="<?= htmlspecialchars($phone) ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="student_no" class="form-label">Student Number</label>
+                        <input type="text" id="student_no" name="student_no" class="form-control" value="<?= htmlspecialchars($studentNo) ?>" required>
+                    </div>
+
+                    <div class="grid grid-2">
+
+                        <div class="form-group">
+                            <label for="faculty_id" class="form-label">Faculty</label>
+
+                            <select id="faculty_id" name="faculty_id" class="form-control" required>
+                                <option value="">Select faculty</option>
+
+                                <?php foreach ($faculties as $faculty): ?>
+                                    <option
+                                        value="<?= (int) $faculty['faculty_id'] ?>"
+                                        <?= (string) $facultyId === (string) $faculty['faculty_id'] ? 'selected' : '' ?>
+                                    >
+                                        <?= htmlspecialchars($faculty['faculty_name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="department_id" class="form-label">Department</label>
+
+                            <select id="department_id" name="department_id" class="form-control" required>
+                                <option value="">Select department</option>
+
+                                <?php foreach ($departments as $department): ?>
+                                    <option
+                                        value="<?= (int) $department['department_id'] ?>"
+                                        <?= (string) $departmentId === (string) $department['department_id'] ? 'selected' : '' ?>
+                                    >
+                                        <?= htmlspecialchars($department['department_name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="grid grid-2">
+
+                        <div class="form-group">
+                            <label for="class_year" class="form-label">Class Year</label>
+
+                            <select id="class_year" name="class_year" class="form-control" required>
+                                <option value="">Select class year</option>
+
+                                <?php for ($i = 1; $i <= 6; $i++): ?>
+                                    <option
+                                        value="<?= $i ?>"
+                                        <?= (string) $classYear === (string) $i ? 'selected' : '' ?>
+                                    >
+                                        <?= $i ?>
+                                    </option>
+                                <?php endfor; ?>
+
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="program_type" class="form-label">Program Type</label>
+                            <input
+                                type="text"
+                                id="program_type"
+                                name="program_type"
+                                class="form-control"
+                                value="<?= htmlspecialchars($programType) ?>"
+                                placeholder="Example: 100% Turkish"
+                            >
+                        </div>
+
+                    </div>
+
+                    <div class="grid grid-2">
+
+                        <div class="form-group">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" id="password" name="password" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                        </div>
+
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;">
+                        Create Account
+                    </button>
+
+                </form>
+
+                <p style="margin-top:24px; text-align:center;">
+                    Already have an account?
+                    <a href="login.php" class="auth-link">
+                        Login
+                    </a>
+                </p>
+
+            </div>
+
+        </div>
+
     </div>
-<?php endif; ?>
-
-<form method="POST" action="">
-    <div>
-        <label for="first_name">First Name</label><br>
-        <input
-            type="text"
-            id="first_name"
-            name="first_name"
-            value="<?= htmlspecialchars($firstName) ?>"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="last_name">Last Name</label><br>
-        <input
-            type="text"
-            id="last_name"
-            name="last_name"
-            value="<?= htmlspecialchars($lastName) ?>"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="email">Email</label><br>
-        <input
-            type="email"
-            id="email"
-            name="email"
-            value="<?= htmlspecialchars($email) ?>"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="phone">Phone</label><br>
-        <input
-            type="text"
-            id="phone"
-            name="phone"
-            value="<?= htmlspecialchars($phone) ?>"
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="student_no">Student Number</label><br>
-        <input
-            type="text"
-            id="student_no"
-            name="student_no"
-            value="<?= htmlspecialchars($studentNo) ?>"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="faculty_id">Faculty</label><br>
-        <select id="faculty_id" name="faculty_id" required>
-            <option value="">Select faculty</option>
-
-            <?php foreach ($faculties as $faculty): ?>
-                <option
-                    value="<?= (int) $faculty['faculty_id'] ?>"
-                    <?= (string) $facultyId === (string) $faculty['faculty_id'] ? 'selected' : '' ?>
-                >
-                    <?= htmlspecialchars($faculty['faculty_name']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label for="department_id">Department</label><br>
-        <select id="department_id" name="department_id" required>
-            <option value="">Select department</option>
-
-            <?php foreach ($departments as $department): ?>
-                <option
-                    value="<?= (int) $department['department_id'] ?>"
-                    <?= (string) $departmentId === (string) $department['department_id'] ? 'selected' : '' ?>
-                >
-                    <?= htmlspecialchars($department['department_name']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label for="class_year">Class Year</label><br>
-        <select id="class_year" name="class_year" required>
-            <option value="">Select class year</option>
-
-            <?php for ($i = 1; $i <= 6; $i++): ?>
-                <option
-                    value="<?= $i ?>"
-                    <?= (string) $classYear === (string) $i ? 'selected' : '' ?>
-                >
-                    <?= $i ?>
-                </option>
-            <?php endfor; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label for="program_type">Program Type</label><br>
-        <input
-            type="text"
-            id="program_type"
-            name="program_type"
-            value="<?= htmlspecialchars($programType) ?>"
-            placeholder="Example: 100% Turkish"
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="password">Password</label><br>
-        <input
-            type="password"
-            id="password"
-            name="password"
-            required
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="confirm_password">Confirm Password</label><br>
-        <input
-            type="password"
-            id="confirm_password"
-            name="confirm_password"
-            required
-        >
-    </div>
-
-    <br>
-
-    <button type="submit">Create Account</button>
-</form>
-
-<p>
-    Already have an account?
-    <a href="login.php">Login</a>
-</p>
+</section>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

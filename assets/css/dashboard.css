@@ -1,0 +1,73 @@
+/* ===== DASHBOARD PAGE ===== */
+.dashboard-hero {
+  margin-bottom: 32px;
+}
+
+/* ===== KPI CARDS ===== */
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 90px;
+  height: 90px;
+  background: rgba(111, 247, 245, 0.12);
+  border-radius: 50%;
+}
+
+.kpi-value {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 12px;
+}
+
+/* ===== QUICK ACTION ===== */
+.quick-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ===== UPCOMING RESERVATION ===== */
+.reservation-highlight {
+  border-left: 4px solid var(--color-primary);
+}
+
+.reservation-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ===== TIMELINE / EMPTY ===== */
+.empty-state {
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* ===== CARD TITLE ===== */
+.dashboard-card-title {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .kpi-value {
+    font-size: 32px;
+  }
+
+  .quick-actions {
+    flex-direction: column;
+  }
+
+  .quick-actions .btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,53 @@
+/* ===== HERO ===== */
+.admin-stations-hero {
+  margin-bottom: 32px;
+}
+
+/* ===== FILTERS ===== */
+.admin-station-filter-grid {
+  gap: 24px;
+}
+
+/* ===== SUMMARY ===== */
+.admin-station-summary strong {
+  color: var(--color-primary-dark);
+  font-size: 20px;
+}
+
+/* ===== TABLE ===== */
+.table td {
+  vertical-align: middle;
+}
+
+.table td .badge {
+  min-width: 88px;
+  justify-content: center;
+}
+
+.table td .btn {
+  white-space: nowrap;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.table .flex {
+  align-items: center;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 1600px) {
+  .table {
+    min-width: 1650px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .card .flex {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card .flex .btn {
+    width: 100%;
+  }
+}

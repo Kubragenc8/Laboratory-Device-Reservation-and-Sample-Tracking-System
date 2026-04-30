@@ -1,0 +1,52 @@
+/* ===== ADMIN HERO ===== */
+.admin-dashboard-hero {
+  margin-bottom: 32px;
+}
+
+/* ===== KPI ===== */
+.admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.admin-kpi-value {
+  font-size: 42px;
+  font-weight: 800;
+  margin: 0;
+  color: var(--color-primary-dark);
+}
+
+/* ===== ACTIONS ===== */
+.admin-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* ===== TABLE ===== */
+.table td .badge {
+  min-width: 84px;
+  text-align: center;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 1200px) {
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-action-group {
+    flex-direction: column;
+  }
+
+  .admin-action-group .btn {
+    width: 100%;
+  }
+}

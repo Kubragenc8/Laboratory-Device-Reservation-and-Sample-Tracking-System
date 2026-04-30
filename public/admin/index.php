@@ -4,10 +4,12 @@ require_once __DIR__ . '/../../includes/admin_check.php';
 require_once __DIR__ . '/../../config/database.php';
 
 $pageTitle = 'Admin Dashboard';
+$pageCss = 'admin-dashboard.css';
 
 $totalUsers = (int) $pdo->query("SELECT COUNT(*) AS total FROM users")->fetch()['total'];
 $totalLabs = (int) $pdo->query("SELECT COUNT(*) AS total FROM laboratories")->fetch()['total'];
 $totalStations = (int) $pdo->query("SELECT COUNT(*) AS total FROM workstations")->fetch()['total'];
+
 $totalActiveReservations = (int) $pdo->query("
     SELECT COUNT(*) AS total
     FROM reservations
@@ -41,56 +43,175 @@ require_once __DIR__ . '/../../includes/header.php';
 
 ?>
 
-<h1>Admin Dashboard</h1>
+<section class="page-section">
+    <div class="container">
 
-<p>
-    Welcome, <?= htmlspecialchars(getCurrentUserName()) ?>.
-</p>
+        <!-- HERO -->
+        <div class="card" style="margin-bottom:32px;">
 
-<p>
-    Your role: <?= htmlspecialchars($_SESSION['role_name']) ?>
-</p>
+            <h1 class="section-title" style="margin-bottom:8px;">
+                Admin Control Center
+            </h1>
 
-<h2>System Summary</h2>
+            <p class="section-subtitle">
+                Welcome, <?= htmlspecialchars(getCurrentUserName()) ?>.
+                Monitor laboratories, reservations, users and operational system health.
+            </p>
 
-<ul>
-    <li>Total users: <?= $totalUsers ?></li>
-    <li>Total laboratories: <?= $totalLabs ?></li>
-    <li>Total stations: <?= $totalStations ?></li>
-    <li>Active reservations: <?= $totalActiveReservations ?></li>
-</ul>
+            <div class="badge badge-info">
+                <?= htmlspecialchars($_SESSION['role_name']) ?>
+            </div>
 
-<h2>Latest Reservations</h2>
+        </div>
 
-<?php if (count($latestReservations) > 0): ?>
-    <table border="1" cellpadding="8" cellspacing="0">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>User</th>
-                <th>Laboratory</th>
-                <th>Station</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($latestReservations as $reservation): ?>
-                <tr>
-                    <td><?= (int) $reservation['reservation_id'] ?></td>
-                    <td><?= htmlspecialchars($reservation['user_full_name']) ?></td>
-                    <td><?= htmlspecialchars($reservation['lab_name']) ?></td>
-                    <td><?= htmlspecialchars($reservation['station_code'] . ' - ' . $reservation['station_name']) ?></td>
-                    <td><?= htmlspecialchars($reservation['start_time']) ?></td>
-                    <td><?= htmlspecialchars($reservation['end_time']) ?></td>
-                    <td><?= htmlspecialchars($reservation['status']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-<?php else: ?>
-    <p>No reservation found.</p>
-<?php endif; ?>
+        <!-- KPI -->
+        <div class="grid grid-4 admin-kpi-grid" style="margin-bottom:32px;">
+
+            <div class="card card-hover">
+                <h3>Total Users</h3>
+                <p class="admin-kpi-value">
+                    <?= $totalUsers ?>
+                </p>
+            </div>
+
+            <div class="card card-hover">
+                <h3>Laboratories</h3>
+                <p class="admin-kpi-value">
+                    <?= $totalLabs ?>
+                </p>
+            </div>
+
+            <div class="card card-hover">
+                <h3>Stations</h3>
+                <p class="admin-kpi-value">
+                    <?= $totalStations ?>
+                </p>
+            </div>
+
+            <div class="card card-hover">
+                <h3>Active Reservations</h3>
+                <p class="admin-kpi-value">
+                    <?= $totalActiveReservations ?>
+                </p>
+            </div>
+
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="card" style="margin-bottom:32px;">
+
+            <h2 style="margin-top:0;">Quick Actions</h2>
+
+            <div class="flex admin-action-group" style="gap:16px; flex-wrap:wrap;">
+
+                <a href="reservations.php" class="btn btn-primary">
+                    Manage Reservations
+                </a>
+
+                <a href="labs.php" class="btn btn-outline">
+                    Manage Laboratories
+                </a>
+
+                <a href="stations.php" class="btn btn-outline">
+                    Manage Stations
+                </a>
+
+                <a href="users.php" class="btn btn-outline">
+                    Manage Users
+                </a>
+
+            </div>
+
+        </div>
+
+        <!-- LATEST -->
+        <div class="card">
+
+            <h2 style="margin-top:0;">
+                Latest Reservations
+            </h2>
+
+            <?php if (count($latestReservations) > 0): ?>
+
+                <div class="table-wrapper">
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Laboratory</th>
+                                <th>Station</th>
+                                <th>Start</th>
+                                <th>End</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <?php foreach ($latestReservations as $reservation): ?>
+
+                                <tr>
+
+                                    <td>
+                                        <?= (int) $reservation['reservation_id'] ?>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($reservation['user_full_name']) ?>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($reservation['lab_name']) ?>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($reservation['station_code'] . ' - ' . $reservation['station_name']) ?>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($reservation['start_time']) ?>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($reservation['end_time']) ?>
+                                    </td>
+
+                                    <td>
+
+                                        <?php if ($reservation['status'] === 'active'): ?>
+                                            <span class="badge badge-success">Active</span>
+                                        <?php elseif ($reservation['status'] === 'cancelled'): ?>
+                                            <span class="badge badge-warning">Cancelled</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-info">
+                                                <?= htmlspecialchars($reservation['status']) ?>
+                                            </span>
+                                        <?php endif; ?>
+
+                                    </td>
+
+                                </tr>
+
+                            <?php endforeach; ?>
+
+                        </tbody>
+                    </table>
+
+                </div>
+
+            <?php else: ?>
+
+                <div class="alert alert-success">
+                    No reservation found.
+                </div>
+
+            <?php endif; ?>
+
+        </div>
+
+    </div>
+</section>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

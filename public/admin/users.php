@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../includes/admin_check.php';
 require_once __DIR__ . '/../../config/database.php';
 
 $pageTitle = 'Admin Users';
+$pageCss = 'admin-users.css';
 
 $filters = [
     'q' => trim($_GET['q'] ?? ''),
@@ -58,6 +59,7 @@ $sql = "
 $params = [];
 
 if ($filters['q'] !== '') {
+
     $sql .= "
         AND (
             u.first_name LIKE :search_first_name
@@ -119,139 +121,261 @@ $users = $stmt->fetchAll();
 
 function selectedUserAdminOption($currentValue, $expectedValue): string
 {
-    return (string) $currentValue === (string) $expectedValue ? 'selected' : '';
+    return (string) $currentValue === (string) $expectedValue
+        ? 'selected'
+        : '';
 }
 
 require_once __DIR__ . '/../../includes/header.php';
 
 ?>
 
-<h1>Admin Users</h1>
+<section class="page-section">
+    <div class="container">
 
-<h2>Filters</h2>
+        <!-- HERO -->
+        <div class="card" style="margin-bottom:32px;">
 
-<form method="GET" action="">
-    <div>
-        <label for="q">Search</label><br>
-        <input
-            type="text"
-            id="q"
-            name="q"
-            value="<?= htmlspecialchars($filters['q']) ?>"
-            placeholder="Search name, email, phone, student number, faculty or department"
-        >
+            <h1 class="section-title" style="margin-bottom:8px;">
+                User Governance Center
+            </h1>
+
+            <p class="section-subtitle">
+                Monitor user ecosystem, manage identity visibility,
+                and oversee account lifecycle across the system.
+            </p>
+
+        </div>
+
+        <!-- FILTERS -->
+        <div class="card" style="margin-bottom:32px;">
+
+            <h2 style="margin-top:0;">Filters</h2>
+
+            <form method="GET" action="">
+
+                <div class="grid grid-3">
+
+                    <div class="form-group">
+                        <label for="q" class="form-label">Search</label>
+                        <input
+                            type="text"
+                            id="q"
+                            name="q"
+                            class="form-control"
+                            value="<?= htmlspecialchars($filters['q']) ?>"
+                            placeholder="Name, email, phone, student no, faculty or department"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role" class="form-label">Role</label>
+
+                        <select
+                            id="role"
+                            name="role"
+                            class="form-control"
+                        >
+                            <option value="">All roles</option>
+
+                            <?php foreach ($allowedRoles as $role): ?>
+                                <option
+                                    value="<?= htmlspecialchars($role) ?>"
+                                    <?= selectedUserAdminOption($filters['role'], $role) ?>
+                                >
+                                    <?= htmlspecialchars(ucfirst($role)) ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="is_active" class="form-label">
+                            Account Status
+                        </label>
+
+                        <select
+                            id="is_active"
+                            name="is_active"
+                            class="form-control"
+                        >
+                            <option value="">All accounts</option>
+
+                            <option
+                                value="1"
+                                <?= selectedUserAdminOption($filters['is_active'], '1') ?>
+                            >
+                                Active
+                            </option>
+
+                            <option
+                                value="0"
+                                <?= selectedUserAdminOption($filters['is_active'], '0') ?>
+                            >
+                                Inactive
+                            </option>
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="flex" style="gap:12px; flex-wrap:wrap;">
+
+                    <button type="submit" class="btn btn-primary">
+                        Apply Filters
+                    </button>
+
+                    <a href="users.php" class="btn btn-outline">
+                        Clear Filters
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="card" style="margin-bottom:32px;">
+
+            <h2 style="margin-top:0;">Results Summary</h2>
+
+            <p style="margin-bottom:0;">
+                Total users shown:
+                <strong><?= count($users) ?></strong>
+            </p>
+
+        </div>
+
+        <!-- TABLE -->
+        <div class="card">
+
+            <h2 style="margin-top:0;">User Directory</h2>
+
+            <?php if (count($users) > 0): ?>
+
+                <div class="table-wrapper">
+
+                    <table class="table">
+
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Role</th>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Student No</th>
+                                <th>Faculty</th>
+                                <th>Department</th>
+                                <th>Class</th>
+                                <th>Program</th>
+                                <th>Status</th>
+                                <th>Total Reservations</th>
+                                <th>Active Reservations</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <?php foreach ($users as $user): ?>
+
+                                <tr>
+
+                                    <td><?= (int) $user['user_id'] ?></td>
+
+                                    <td>
+
+                                        <?php if ($user['role_name'] === 'admin'): ?>
+                                            <span class="badge badge-warning">
+                                                Admin
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge badge-info">
+                                                Student
+                                            </span>
+                                        <?php endif; ?>
+
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars(
+                                            $user['first_name'] . ' ' . $user['last_name']
+                                        ) ?>
+                                    </td>
+
+                                    <td><?= htmlspecialchars($user['email']) ?></td>
+
+                                    <td><?= htmlspecialchars($user['phone'] ?? '-') ?></td>
+
+                                    <td><?= htmlspecialchars($user['student_no'] ?? '-') ?></td>
+
+                                    <td><?= htmlspecialchars($user['faculty_name'] ?? '-') ?></td>
+
+                                    <td><?= htmlspecialchars($user['department_name'] ?? '-') ?></td>
+
+                                    <td>
+                                        <?= $user['class_year'] !== null
+                                            ? (int) $user['class_year']
+                                            : '-' ?>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($user['program_type'] ?? '-') ?>
+                                    </td>
+
+                                    <td>
+
+                                        <?php if ((int) $user['is_active'] === 1): ?>
+                                            <span class="badge badge-success">
+                                                Active
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge badge-warning">
+                                                Inactive
+                                            </span>
+                                        <?php endif; ?>
+
+                                    </td>
+
+                                    <td>
+                                        <?= (int) $user['total_reservation_count'] ?>
+                                    </td>
+
+                                    <td>
+                                        <span class="badge badge-info">
+                                            <?= (int) $user['active_reservation_count'] ?>
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($user['created_at']) ?>
+                                    </td>
+
+                                </tr>
+
+                            <?php endforeach; ?>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            <?php else: ?>
+
+                <div class="alert alert-success">
+                    No user found.
+                </div>
+
+            <?php endif; ?>
+
+        </div>
+
     </div>
-
-    <br>
-
-    <div>
-        <label for="role">Role</label><br>
-        <select id="role" name="role">
-            <option value="">All roles</option>
-
-            <?php foreach ($allowedRoles as $role): ?>
-                <option
-                    value="<?= htmlspecialchars($role) ?>"
-                    <?= selectedUserAdminOption($filters['role'], $role) ?>
-                >
-                    <?= htmlspecialchars($role) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label for="is_active">Account Status</label><br>
-        <select id="is_active" name="is_active">
-            <option value="">All accounts</option>
-            <option value="1" <?= selectedUserAdminOption($filters['is_active'], '1') ?>>
-                Active
-            </option>
-            <option value="0" <?= selectedUserAdminOption($filters['is_active'], '0') ?>>
-                Inactive
-            </option>
-        </select>
-    </div>
-
-    <br>
-
-    <button type="submit">Apply Filters</button>
-    <a href="users.php">Clear Filters</a>
-</form>
-
-<hr>
-
-<h2>User List</h2>
-
-<p>
-    Total users shown: <?= count($users) ?>
-</p>
-
-<?php if (count($users) > 0): ?>
-    <table border="1" cellpadding="8" cellspacing="0">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Role</th>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Student No</th>
-                <th>Faculty</th>
-                <th>Department</th>
-                <th>Class Year</th>
-                <th>Program Type</th>
-                <th>Active</th>
-                <th>Total Reservations</th>
-                <th>Active Reservations</th>
-                <th>Created At</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            <?php foreach ($users as $user): ?>
-                <tr>
-                    <td><?= (int) $user['user_id'] ?></td>
-
-                    <td><?= htmlspecialchars($user['role_name']) ?></td>
-
-                    <td>
-                        <?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>
-                    </td>
-
-                    <td><?= htmlspecialchars($user['email']) ?></td>
-
-                    <td><?= htmlspecialchars($user['phone'] ?? '-') ?></td>
-
-                    <td><?= htmlspecialchars($user['student_no'] ?? '-') ?></td>
-
-                    <td><?= htmlspecialchars($user['faculty_name'] ?? '-') ?></td>
-
-                    <td><?= htmlspecialchars($user['department_name'] ?? '-') ?></td>
-
-                    <td>
-                        <?= $user['class_year'] !== null ? (int) $user['class_year'] : '-' ?>
-                    </td>
-
-                    <td><?= htmlspecialchars($user['program_type'] ?? '-') ?></td>
-
-                    <td>
-                        <?= (int) $user['is_active'] === 1 ? 'Yes' : 'No' ?>
-                    </td>
-
-                    <td><?= (int) $user['total_reservation_count'] ?></td>
-
-                    <td><?= (int) $user['active_reservation_count'] ?></td>
-
-                    <td><?= htmlspecialchars($user['created_at']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-<?php else: ?>
-    <p>No user found.</p>
-<?php endif; ?>
+</section>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

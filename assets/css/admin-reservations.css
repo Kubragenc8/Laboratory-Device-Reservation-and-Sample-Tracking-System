@@ -1,0 +1,73 @@
+/* ===== HERO ===== */
+.admin-reservations-hero {
+  margin-bottom: 32px;
+}
+
+/* ===== FILTERS ===== */
+.admin-filter-grid {
+  gap: 24px;
+}
+
+.admin-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ===== SUMMARY ===== */
+.admin-summary-card strong {
+  color: var(--color-primary-dark);
+  font-size: 20px;
+}
+
+/* ===== STATUS FORM ===== */
+.admin-status-form {
+  min-width: 150px;
+}
+
+.admin-status-form .form-control {
+  min-height: 42px;
+}
+
+.admin-status-form .btn {
+  width: 100%;
+}
+
+/* ===== TABLE ===== */
+.table td {
+  vertical-align: top;
+}
+
+.table td .badge {
+  min-width: 82px;
+  justify-content: center;
+}
+
+/* ===== PURPOSE ===== */
+.admin-purpose-cell {
+  max-width: 220px;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 1200px) {
+  .table {
+    min-width: 1400px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .admin-filter-actions {
+    flex-direction: column;
+  }
+
+  .admin-filter-actions .btn {
+    width: 100%;
+  }
+
+  .admin-status-form {
+    min-width: 130px;
+  }
+}

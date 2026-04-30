@@ -1,0 +1,50 @@
+/* ===== HERO ===== */
+.admin-equipment-hero {
+  margin-bottom: 32px;
+}
+
+/* ===== FILTERS ===== */
+.admin-equipment-filter-grid {
+  gap: 24px;
+}
+
+/* ===== SUMMARY ===== */
+.admin-equipment-summary strong {
+  color: var(--color-primary-dark);
+  font-size: 20px;
+}
+
+/* ===== TABLE ===== */
+.table td {
+  vertical-align: middle;
+}
+
+.table td .badge {
+  min-width: 90px;
+  justify-content: center;
+}
+
+/* ===== NOTES ===== */
+.table td:last-child {
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 1800px) {
+  .table {
+    min-width: 1750px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .card .flex {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card .flex .btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,54 @@
+/* ===== HERO ===== */
+.reservation-detail-hero {
+  margin-bottom: 32px;
+}
+
+/* ===== STATUS BADGE ===== */
+.reservation-status-badge {
+  margin-top: 12px;
+}
+
+/* ===== SUMMARY ===== */
+.reservation-summary-card {
+  border-left: 4px solid var(--color-primary);
+}
+
+/* ===== CANCEL ===== */
+.cancel-box {
+  margin-top: 24px;
+}
+
+/* ===== HISTORY ===== */
+.history-table .badge {
+  min-width: 80px;
+  text-align: center;
+}
+
+/* ===== TIMELINE FEEL ===== */
+.history-card {
+  position: relative;
+}
+
+.history-card::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 24px;
+  width: 4px;
+  height: calc(100% - 48px);
+  background: rgba(111, 247, 245, 0.18);
+  border-radius: 999px;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 992px) {
+  .table-wrapper {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .history-card::before {
+    display: none;
+  }
+}

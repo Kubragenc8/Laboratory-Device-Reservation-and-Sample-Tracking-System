@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../helpers/lab_helper.php';
 
 $pageTitle = 'Admin Stations';
+$pageCss = 'admin-stations.css';
 
 $filters = [
     'q' => trim($_GET['q'] ?? ''),
@@ -141,151 +142,270 @@ require_once __DIR__ . '/../../includes/header.php';
 
 ?>
 
-<h1>Admin Stations</h1>
+<section class="page-section">
+    <div class="container">
 
-<h2>Filters</h2>
+        <!-- HERO -->
+        <div class="card" style="margin-bottom:32px;">
 
-<form method="GET" action="">
-    <div>
-        <label for="q">Search</label><br>
-        <input
-            type="text"
-            id="q"
-            name="q"
-            value="<?= htmlspecialchars($filters['q']) ?>"
-            placeholder="Search station, laboratory, department or faculty"
-        >
+            <h1 class="section-title" style="margin-bottom:8px;">
+                Workstation Governance Center
+            </h1>
+
+            <p class="section-subtitle">
+                Monitor station infrastructure, manage operational status,
+                and oversee workstation ecosystem across all laboratories.
+            </p>
+
+        </div>
+
+        <!-- FILTERS -->
+        <div class="card" style="margin-bottom:32px;">
+
+            <h2 style="margin-top:0;">Filters</h2>
+
+            <form method="GET" action="">
+
+                <div class="grid grid-2">
+
+                    <div class="form-group">
+                        <label for="q" class="form-label">Search</label>
+                        <input
+                            type="text"
+                            id="q"
+                            name="q"
+                            class="form-control"
+                            value="<?= htmlspecialchars($filters['q']) ?>"
+                            placeholder="Station, lab, faculty or department"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lab_id" class="form-label">
+                            Laboratory
+                        </label>
+
+                        <select
+                            id="lab_id"
+                            name="lab_id"
+                            class="form-control"
+                        >
+                            <option value="">All laboratories</option>
+
+                            <?php foreach ($labs as $lab): ?>
+                                <option
+                                    value="<?= (int) $lab['lab_id'] ?>"
+                                    <?= selectedStationAdminOption($filters['lab_id'], $lab['lab_id']) ?>
+                                >
+                                    <?= htmlspecialchars($lab['lab_code'] . ' - ' . $lab['lab_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="grid grid-2">
+
+                    <div class="form-group">
+                        <label for="station_type_id" class="form-label">
+                            Station Type
+                        </label>
+
+                        <select
+                            id="station_type_id"
+                            name="station_type_id"
+                            class="form-control"
+                        >
+                            <option value="">All station types</option>
+
+                            <?php foreach ($stationTypes as $type): ?>
+                                <option
+                                    value="<?= (int) $type['station_type_id'] ?>"
+                                    <?= selectedStationAdminOption($filters['station_type_id'], $type['station_type_id']) ?>
+                                >
+                                    <?= htmlspecialchars($type['type_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status" class="form-label">
+                            Status
+                        </label>
+
+                        <select
+                            id="status"
+                            name="status"
+                            class="form-control"
+                        >
+                            <option value="">All statuses</option>
+
+                            <?php foreach ($allowedStatuses as $status): ?>
+                                <option
+                                    value="<?= htmlspecialchars($status) ?>"
+                                    <?= selectedStationAdminOption($filters['status'], $status) ?>
+                                >
+                                    <?= htmlspecialchars(ucfirst($status)) ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="flex" style="gap:12px; flex-wrap:wrap;">
+
+                    <button type="submit" class="btn btn-primary">
+                        Apply Filters
+                    </button>
+
+                    <a href="stations.php" class="btn btn-outline">
+                        Clear Filters
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="card" style="margin-bottom:32px;">
+
+            <h2 style="margin-top:0;">Results Summary</h2>
+
+            <p style="margin-bottom:0;">
+                Total stations shown:
+                <strong><?= count($stations) ?></strong>
+            </p>
+
+        </div>
+
+        <!-- TABLE -->
+        <div class="card">
+
+            <h2 style="margin-top:0;">Station List</h2>
+
+            <?php if (count($stations) > 0): ?>
+
+                <div class="table-wrapper">
+
+                    <table class="table">
+
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Station Code</th>
+                                <th>Station Name</th>
+                                <th>Type</th>
+                                <th>Laboratory</th>
+                                <th>Faculty</th>
+                                <th>Department</th>
+                                <th>Capacity</th>
+                                <th>Status</th>
+                                <th>Equipment</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <?php foreach ($stations as $station): ?>
+
+                                <tr>
+
+                                    <td><?= (int) $station['station_id'] ?></td>
+
+                                    <td><?= htmlspecialchars($station['station_code']) ?></td>
+
+                                    <td><?= htmlspecialchars($station['station_name']) ?></td>
+
+                                    <td>
+                                        <span class="badge badge-info">
+                                            <?= htmlspecialchars($station['type_name']) ?>
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($station['lab_code'] . ' - ' . $station['lab_name']) ?>
+                                    </td>
+
+                                    <td><?= htmlspecialchars($station['faculty_name']) ?></td>
+
+                                    <td><?= htmlspecialchars($station['department_name']) ?></td>
+
+                                    <td>
+                                        <?= (int) $station['capacity'] ?>
+                                    </td>
+
+                                    <td>
+
+                                        <?php if ($station['status'] === 'active'): ?>
+                                            <span class="badge badge-success">Active</span>
+
+                                        <?php elseif ($station['status'] === 'maintenance'): ?>
+                                            <span class="badge badge-warning">Maintenance</span>
+
+                                        <?php else: ?>
+                                            <span class="badge badge-info">Passive</span>
+                                        <?php endif; ?>
+
+                                    </td>
+
+                                    <td>
+                                        <?= (int) $station['equipment_count'] ?>
+                                    </td>
+
+                                    <td>
+
+                                        <div class="flex" style="gap:8px; flex-wrap:wrap;">
+
+                                            <a
+                                                href="../station-detail.php?id=<?= (int) $station['station_id'] ?>"
+                                                class="btn btn-outline"
+                                            >
+                                                View
+                                            </a>
+
+                                            <?php if ($station['status'] === 'active'): ?>
+                                                <a
+                                                    href="../reserve.php?lab_id=<?= (int) $station['lab_id'] ?>&station_id=<?= (int) $station['station_id'] ?>"
+                                                    class="btn btn-primary"
+                                                >
+                                                    Reserve
+                                                </a>
+                                            <?php endif; ?>
+
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+                            <?php endforeach; ?>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            <?php else: ?>
+
+                <div class="alert alert-success">
+                    No station found.
+                </div>
+
+            <?php endif; ?>
+
+        </div>
+
     </div>
-
-    <br>
-
-    <div>
-        <label for="lab_id">Laboratory</label><br>
-        <select id="lab_id" name="lab_id">
-            <option value="">All laboratories</option>
-
-            <?php foreach ($labs as $lab): ?>
-                <option
-                    value="<?= (int) $lab['lab_id'] ?>"
-                    <?= selectedStationAdminOption($filters['lab_id'], $lab['lab_id']) ?>
-                >
-                    <?= htmlspecialchars($lab['lab_code'] . ' - ' . $lab['lab_name']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label for="station_type_id">Station Type</label><br>
-        <select id="station_type_id" name="station_type_id">
-            <option value="">All station types</option>
-
-            <?php foreach ($stationTypes as $type): ?>
-                <option
-                    value="<?= (int) $type['station_type_id'] ?>"
-                    <?= selectedStationAdminOption($filters['station_type_id'], $type['station_type_id']) ?>
-                >
-                    <?= htmlspecialchars($type['type_name']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label for="status">Status</label><br>
-        <select id="status" name="status">
-            <option value="">All statuses</option>
-
-            <?php foreach ($allowedStatuses as $status): ?>
-                <option
-                    value="<?= htmlspecialchars($status) ?>"
-                    <?= selectedStationAdminOption($filters['status'], $status) ?>
-                >
-                    <?= htmlspecialchars($status) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <button type="submit">Apply Filters</button>
-    <a href="stations.php">Clear Filters</a>
-</form>
-
-<hr>
-
-<h2>Station List</h2>
-
-<p>
-    Total stations shown: <?= count($stations) ?>
-</p>
-
-<?php if (count($stations) > 0): ?>
-    <table border="1" cellpadding="8" cellspacing="0">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Station Code</th>
-                <th>Station Name</th>
-                <th>Type</th>
-                <th>Laboratory</th>
-                <th>Faculty</th>
-                <th>Department</th>
-                <th>Capacity</th>
-                <th>Status</th>
-                <th>Equipment Count</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            <?php foreach ($stations as $station): ?>
-                <tr>
-                    <td><?= (int) $station['station_id'] ?></td>
-
-                    <td><?= htmlspecialchars($station['station_code']) ?></td>
-
-                    <td><?= htmlspecialchars($station['station_name']) ?></td>
-
-                    <td><?= htmlspecialchars($station['type_name']) ?></td>
-
-                    <td>
-                        <?= htmlspecialchars($station['lab_code'] . ' - ' . $station['lab_name']) ?>
-                    </td>
-
-                    <td><?= htmlspecialchars($station['faculty_name']) ?></td>
-
-                    <td><?= htmlspecialchars($station['department_name']) ?></td>
-
-                    <td><?= (int) $station['capacity'] ?></td>
-
-                    <td><?= htmlspecialchars($station['status']) ?></td>
-
-                    <td><?= (int) $station['equipment_count'] ?></td>
-
-                    <td>
-                        <a href="../station-detail.php?id=<?= (int) $station['station_id'] ?>">
-                            View Public Detail
-                        </a>
-
-                        <?php if ($station['status'] === 'active'): ?>
-                            |
-                            <a href="../reserve.php?lab_id=<?= (int) $station['lab_id'] ?>&station_id=<?= (int) $station['station_id'] ?>">
-                                Reserve
-                            </a>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-<?php else: ?>
-    <p>No station found.</p>
-<?php endif; ?>
+</section>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

@@ -5,104 +5,118 @@ $currentPath = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 function navLinkActive(string $pathPart): string
 {
     $currentPath = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
-
     return strpos($currentPath, $pathPart) !== false ? 'active' : '';
 }
 
-$brandUrl = isLoggedIn() && isAdmin()
-    ? BASE_URL . 'admin/index.php'
-    : BASE_URL . 'dashboard.php';
+$isLoggedIn = isLoggedIn();
+$isAdmin = $isLoggedIn && isAdmin();
 
-if (!isLoggedIn()) {
-    $brandUrl = BASE_URL . 'login.php';
+$brandUrl = BASE_URL . 'index.php';
+
+if ($isLoggedIn && !$isAdmin) {
+    $brandUrl = BASE_URL . 'dashboard.php';
+}
+
+if ($isLoggedIn && $isAdmin) {
+    $brandUrl = BASE_URL . 'admin/index.php';
 }
 
 ?>
-<header class="top-navbar">
-    <div class="navbar-left">
-        <a class="navbar-brand" href="<?= $brandUrl ?>">
-            Laboratory Reservation System
-        </a>
-    </div>
+<header class="topbar">
+    <div class="container">
 
-    <nav class="navbar-links">
-        <?php if (isLoggedIn()): ?>
+        <div class="topbar-inner">
 
-            <?php if (isAdmin()): ?>
-                <a class="<?= navLinkActive('/public/admin/index.php') ?>" href="<?= BASE_URL ?>admin/index.php">
-                    Admin Dashboard
+            <!-- BRAND -->
+            <div class="topbar-left">
+
+                <a class="brand" href="<?= $brandUrl ?>">
+                    <span class="brand-mark">LAB</span>
+                    <span class="brand-text">
+                        <?= htmlspecialchars(APP_NAME) ?>
+                    </span>
                 </a>
 
-                <a class="<?= navLinkActive('/public/admin/reservations.php') ?>" href="<?= BASE_URL ?>admin/reservations.php">
-                    Reservations
-                </a>
+            </div>
 
-                <a class="<?= navLinkActive('/public/admin/labs.php') ?>" href="<?= BASE_URL ?>admin/labs.php">
-                    Labs
-                </a>
+            <!-- NAVIGATION -->
+            <nav class="nav-links" data-mobile-menu>
 
-                <a class="<?= navLinkActive('/public/admin/stations.php') ?>" href="<?= BASE_URL ?>admin/stations.php">
-                    Stations
-                </a>
-
-                <a class="<?= navLinkActive('/public/admin/equipment.php') ?>" href="<?= BASE_URL ?>admin/equipment.php">
-                    Equipment
-                </a>
-
-                <a class="<?= navLinkActive('/public/admin/users.php') ?>" href="<?= BASE_URL ?>admin/users.php">
-                    Users
-                </a>
-
-                <span>|</span>
-
-                <a class="<?= navLinkActive('/public/dashboard.php') ?>" href="<?= BASE_URL ?>dashboard.php">
-                    User Dashboard
-                </a>
-
-                <a class="<?= navLinkActive('/public/profile.php') ?>" href="<?= BASE_URL ?>profile.php">
-                    Profile
-                </a>
-            <?php else: ?>
-                <a class="<?= navLinkActive('/public/dashboard.php') ?>" href="<?= BASE_URL ?>dashboard.php">
-                    Dashboard
+                <!-- PUBLIC -->
+                <a class="<?= navLinkActive('/public/index.php') ?>" href="<?= BASE_URL ?>index.php">
+                    Home
                 </a>
 
                 <a class="<?= navLinkActive('/public/labs.php') ?>" href="<?= BASE_URL ?>labs.php">
                     Laboratories
                 </a>
 
-                <a class="<?= navLinkActive('/public/reserve.php') ?>" href="<?= BASE_URL ?>reserve.php">
-                    Create Reservation
-                </a>
+                <?php if (!$isLoggedIn): ?>
 
-                <a class="<?= navLinkActive('/public/my-reservations.php') ?>" href="<?= BASE_URL ?>my-reservations.php">
-                    My Reservations
-                </a>
+                    <a class="<?= navLinkActive('/public/login.php') ?>" href="<?= BASE_URL ?>login.php">
+                        Login
+                    </a>
 
-                <a class="<?= navLinkActive('/public/profile.php') ?>" href="<?= BASE_URL ?>profile.php">
-                    Profile
-                </a>
-            <?php endif; ?>
+                    <a class="btn btn-primary nav-cta" href="<?= BASE_URL ?>register.php">
+                        Register
+                    </a>
 
-            <span>|</span>
+                <?php else: ?>
 
-            <span class="navbar-user">
-                <?= htmlspecialchars(getCurrentUserName()) ?>
-                (<?= htmlspecialchars($_SESSION['role_name'] ?? 'user') ?>)
-            </span>
+                    <!-- USER -->
+                    <a class="<?= navLinkActive('/public/dashboard.php') ?>" href="<?= BASE_URL ?>dashboard.php">
+                        Dashboard
+                    </a>
 
-            <a href="<?= BASE_URL ?>logout.php">
-                Logout
-            </a>
+                    <a class="<?= navLinkActive('/public/reserve.php') ?>" href="<?= BASE_URL ?>reserve.php">
+                        Reserve
+                    </a>
 
-        <?php else: ?>
-            <a class="<?= navLinkActive('/public/login.php') ?>" href="<?= BASE_URL ?>login.php">
-                Login
-            </a>
+                    <a class="<?= navLinkActive('/public/my-reservations.php') ?>" href="<?= BASE_URL ?>my-reservations.php">
+                        My Reservations
+                    </a>
 
-            <a class="<?= navLinkActive('/public/register.php') ?>" href="<?= BASE_URL ?>register.php">
-                Register
-            </a>
-        <?php endif; ?>
-    </nav>
+                    <a class="<?= navLinkActive('/public/profile.php') ?>" href="<?= BASE_URL ?>profile.php">
+                        Profile
+                    </a>
+
+                    <!-- ADMIN -->
+                    <?php if ($isAdmin): ?>
+                        <a class="<?= navLinkActive('/public/admin/') ?>" href="<?= BASE_URL ?>admin/index.php">
+                            Admin Panel
+                        </a>
+                    <?php endif; ?>
+
+                    <!-- USER CHIP -->
+                    <div class="nav-user-chip">
+                        <span class="nav-user-name">
+                            <?= htmlspecialchars(getCurrentUserName()) ?>
+                        </span>
+
+                        <span class="nav-user-role">
+                            <?= htmlspecialchars($_SESSION['role_name'] ?? 'user') ?>
+                        </span>
+                    </div>
+
+                    <a class="btn btn-outline" href="<?= BASE_URL ?>logout.php">
+                        Logout
+                    </a>
+
+                <?php endif; ?>
+
+            </nav>
+
+            <!-- MOBILE BUTTON -->
+            <button
+                class="btn btn-secondary mobile-menu-btn"
+                type="button"
+                data-mobile-toggle
+                aria-label="Toggle navigation"
+            >
+                Menu
+            </button>
+
+        </div>
+
+    </div>
 </header>

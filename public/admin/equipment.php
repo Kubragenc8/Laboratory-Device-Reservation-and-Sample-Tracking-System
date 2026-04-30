@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../helpers/lab_helper.php';
 
 $pageTitle = 'Admin Equipment';
+$pageCss = 'admin-equipment.css';
 
 $filters = [
     'q' => trim($_GET['q'] ?? ''),
@@ -148,167 +149,255 @@ require_once __DIR__ . '/../../includes/header.php';
 
 ?>
 
-<h1>Admin Equipment</h1>
+<section class="page-section">
+    <div class="container">
 
-<h2>Filters</h2>
+        <!-- HERO -->
+        <div class="card" style="margin-bottom:32px;">
 
-<form method="GET" action="">
-    <div>
-        <label for="q">Search</label><br>
-        <input
-            type="text"
-            id="q"
-            name="q"
-            value="<?= htmlspecialchars($filters['q']) ?>"
-            placeholder="Search asset, equipment, brand, model, laboratory or station"
-        >
+            <h1 class="section-title" style="margin-bottom:8px;">
+                Equipment Asset Governance Center
+            </h1>
+
+            <p class="section-subtitle">
+                Monitor inventory ecosystem, manage physical assets,
+                and oversee equipment lifecycle across laboratories.
+            </p>
+
+        </div>
+
+        <!-- FILTERS -->
+        <div class="card" style="margin-bottom:32px;">
+
+            <h2 style="margin-top:0;">Filters</h2>
+
+            <form method="GET" action="">
+
+                <div class="grid grid-2">
+
+                    <div class="form-group">
+                        <label for="q" class="form-label">Search</label>
+                        <input
+                            type="text"
+                            id="q"
+                            name="q"
+                            class="form-control"
+                            value="<?= htmlspecialchars($filters['q']) ?>"
+                            placeholder="Asset, equipment, brand, model or station"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category" class="form-label">Category</label>
+
+                        <select id="category" name="category" class="form-control">
+                            <option value="">All categories</option>
+
+                            <?php foreach ($categories as $category): ?>
+                                <option
+                                    value="<?= htmlspecialchars($category['category']) ?>"
+                                    <?= selectedEquipmentAdminOption($filters['category'], $category['category']) ?>
+                                >
+                                    <?= htmlspecialchars($category['category']) ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="grid grid-3">
+
+                    <div class="form-group">
+                        <label for="lab_id" class="form-label">Laboratory</label>
+
+                        <select id="lab_id" name="lab_id" class="form-control">
+                            <option value="">All laboratories</option>
+
+                            <?php foreach ($labs as $lab): ?>
+                                <option
+                                    value="<?= (int) $lab['lab_id'] ?>"
+                                    <?= selectedEquipmentAdminOption($filters['lab_id'], $lab['lab_id']) ?>
+                                >
+                                    <?= htmlspecialchars($lab['lab_code'] . ' - ' . $lab['lab_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="station_id" class="form-label">Station</label>
+
+                        <select id="station_id" name="station_id" class="form-control">
+                            <option value="">All stations</option>
+
+                            <?php foreach ($stations as $station): ?>
+                                <option
+                                    value="<?= (int) $station['station_id'] ?>"
+                                    <?= selectedEquipmentAdminOption($filters['station_id'], $station['station_id']) ?>
+                                >
+                                    <?= htmlspecialchars(
+                                        $station['lab_code'] . ' - ' .
+                                        $station['station_code'] . ' - ' .
+                                        $station['station_name']
+                                    ) ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status" class="form-label">Status</label>
+
+                        <select id="status" name="status" class="form-control">
+                            <option value="">All statuses</option>
+
+                            <?php foreach ($allowedStatuses as $status): ?>
+                                <option
+                                    value="<?= htmlspecialchars($status) ?>"
+                                    <?= selectedEquipmentAdminOption($filters['status'], $status) ?>
+                                >
+                                    <?= htmlspecialchars(ucfirst($status)) ?>
+                                </option>
+                            <?php endforeach; ?>
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="flex" style="gap:12px; flex-wrap:wrap;">
+
+                    <button type="submit" class="btn btn-primary">
+                        Apply Filters
+                    </button>
+
+                    <a href="equipment.php" class="btn btn-outline">
+                        Clear Filters
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="card" style="margin-bottom:32px;">
+
+            <h2 style="margin-top:0;">Results Summary</h2>
+
+            <p style="margin-bottom:0;">
+                Total equipment shown:
+                <strong><?= count($equipmentList) ?></strong>
+            </p>
+
+        </div>
+
+        <!-- TABLE -->
+        <div class="card">
+
+            <h2 style="margin-top:0;">Equipment List</h2>
+
+            <?php if (count($equipmentList) > 0): ?>
+
+                <div class="table-wrapper">
+
+                    <table class="table">
+
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Asset Code</th>
+                                <th>Equipment</th>
+                                <th>Category</th>
+                                <th>Laboratory</th>
+                                <th>Station</th>
+                                <th>Brand</th>
+                                <th>Model</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <?php foreach ($equipmentList as $equipment): ?>
+
+                                <tr>
+
+                                    <td><?= (int) $equipment['equipment_id'] ?></td>
+
+                                    <td><?= htmlspecialchars($equipment['asset_code']) ?></td>
+
+                                    <td><?= htmlspecialchars($equipment['equipment_name']) ?></td>
+
+                                    <td>
+                                        <span class="badge badge-info">
+                                            <?= htmlspecialchars($equipment['category']) ?>
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <?= htmlspecialchars($equipment['lab_code'] . ' - ' . $equipment['lab_name']) ?>
+                                    </td>
+
+                                    <td>
+                                        <?php if ($equipment['station_id']): ?>
+                                            <a href="../station-detail.php?id=<?= (int) $equipment['station_id'] ?>">
+                                                <?= htmlspecialchars($equipment['station_code'] . ' - ' . $equipment['station_name']) ?>
+                                            </a>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </td>
+
+                                    <td><?= htmlspecialchars($equipment['brand'] ?? '-') ?></td>
+
+                                    <td><?= htmlspecialchars($equipment['model'] ?? '-') ?></td>
+
+                                    <td>
+
+                                        <?php if ($equipment['status'] === 'available'): ?>
+                                            <span class="badge badge-success">Available</span>
+
+                                        <?php elseif ($equipment['status'] === 'maintenance'): ?>
+                                            <span class="badge badge-warning">Maintenance</span>
+
+                                        <?php else: ?>
+                                            <span class="badge badge-info">
+                                                <?= htmlspecialchars(ucfirst($equipment['status'])) ?>
+                                            </span>
+                                        <?php endif; ?>
+
+                                    </td>
+
+                                    <td><?= htmlspecialchars($equipment['notes'] ?? '-') ?></td>
+
+                                </tr>
+
+                            <?php endforeach; ?>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            <?php else: ?>
+
+                <div class="alert alert-success">
+                    No equipment found.
+                </div>
+
+            <?php endif; ?>
+
+        </div>
+
     </div>
-
-    <br>
-
-    <div>
-        <label for="lab_id">Laboratory</label><br>
-        <select id="lab_id" name="lab_id">
-            <option value="">All laboratories</option>
-
-            <?php foreach ($labs as $lab): ?>
-                <option
-                    value="<?= (int) $lab['lab_id'] ?>"
-                    <?= selectedEquipmentAdminOption($filters['lab_id'], $lab['lab_id']) ?>
-                >
-                    <?= htmlspecialchars($lab['lab_code'] . ' - ' . $lab['lab_name']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label for="station_id">Station</label><br>
-        <select id="station_id" name="station_id">
-            <option value="">All stations</option>
-
-            <?php foreach ($stations as $station): ?>
-                <option
-                    value="<?= (int) $station['station_id'] ?>"
-                    <?= selectedEquipmentAdminOption($filters['station_id'], $station['station_id']) ?>
-                >
-                    <?= htmlspecialchars(
-                        $station['lab_code'] . ' - ' .
-                        $station['station_code'] . ' - ' .
-                        $station['station_name']
-                    ) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label for="category">Category</label><br>
-        <select id="category" name="category">
-            <option value="">All categories</option>
-
-            <?php foreach ($categories as $category): ?>
-                <option
-                    value="<?= htmlspecialchars($category['category']) ?>"
-                    <?= selectedEquipmentAdminOption($filters['category'], $category['category']) ?>
-                >
-                    <?= htmlspecialchars($category['category']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <div>
-        <label for="status">Status</label><br>
-        <select id="status" name="status">
-            <option value="">All statuses</option>
-
-            <?php foreach ($allowedStatuses as $status): ?>
-                <option
-                    value="<?= htmlspecialchars($status) ?>"
-                    <?= selectedEquipmentAdminOption($filters['status'], $status) ?>
-                >
-                    <?= htmlspecialchars($status) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
-
-    <br>
-
-    <button type="submit">Apply Filters</button>
-    <a href="equipment.php">Clear Filters</a>
-</form>
-
-<hr>
-
-<h2>Equipment List</h2>
-
-<p>
-    Total equipment shown: <?= count($equipmentList) ?>
-</p>
-
-<?php if (count($equipmentList) > 0): ?>
-    <table border="1" cellpadding="8" cellspacing="0">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Asset Code</th>
-                <th>Equipment</th>
-                <th>Category</th>
-                <th>Laboratory</th>
-                <th>Station</th>
-                <th>Brand</th>
-                <th>Model</th>
-                <th>Status</th>
-                <th>Notes</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            <?php foreach ($equipmentList as $equipment): ?>
-                <tr>
-                    <td><?= (int) $equipment['equipment_id'] ?></td>
-
-                    <td><?= htmlspecialchars($equipment['asset_code']) ?></td>
-
-                    <td><?= htmlspecialchars($equipment['equipment_name']) ?></td>
-
-                    <td><?= htmlspecialchars($equipment['category']) ?></td>
-
-                    <td>
-                        <?= htmlspecialchars($equipment['lab_code'] . ' - ' . $equipment['lab_name']) ?>
-                    </td>
-
-                    <td>
-                        <?php if ($equipment['station_id']): ?>
-                            <a href="../station-detail.php?id=<?= (int) $equipment['station_id'] ?>">
-                                <?= htmlspecialchars($equipment['station_code'] . ' - ' . $equipment['station_name']) ?>
-                            </a>
-                        <?php else: ?>
-                            -
-                        <?php endif; ?>
-                    </td>
-
-                    <td><?= htmlspecialchars($equipment['brand'] ?? '-') ?></td>
-
-                    <td><?= htmlspecialchars($equipment['model'] ?? '-') ?></td>
-
-                    <td><?= htmlspecialchars($equipment['status']) ?></td>
-
-                    <td><?= htmlspecialchars($equipment['notes'] ?? '-') ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-<?php else: ?>
-    <p>No equipment found.</p>
-<?php endif; ?>
+</section>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

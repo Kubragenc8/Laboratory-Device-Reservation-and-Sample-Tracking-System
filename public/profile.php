@@ -5,6 +5,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/validation_helper.php';
 
 $pageTitle = 'Profile';
+$pageCss = 'profile.css';
 
 $userId = getCurrentUserId();
 
@@ -101,7 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $profile = getCurrentUserProfile($pdo, (int) $userId);
         $phone = $profile['phone'] ?? '';
         $programType = $profile['program_type'] ?? '';
+
     } catch (Exception $e) {
+
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
@@ -118,72 +121,139 @@ require_once __DIR__ . '/../includes/header.php';
 
 ?>
 
-<h1>Profile</h1>
+<section class="page-section">
+    <div class="container">
 
-<?php if ($message !== ''): ?>
-    <p style="color: <?= $messageStatus ? 'green' : 'red' ?>;">
-        <?= htmlspecialchars($message) ?>
-    </p>
-<?php endif; ?>
+        <!-- HERO -->
+        <div class="card" style="margin-bottom:32px;">
 
-<h2>Account Information</h2>
+            <h1 class="section-title" style="margin-bottom:8px;">
+                My Profile
+            </h1>
 
-<ul>
-    <li>User ID: <?= (int) $profile['user_id'] ?></li>
-    <li>Role: <?= htmlspecialchars($profile['role_name']) ?></li>
-    <li>Full Name: <?= htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name']) ?></li>
-    <li>Email: <?= htmlspecialchars($profile['email']) ?></li>
-    <li>Account Active: <?= (int) $profile['is_active'] === 1 ? 'Yes' : 'No' ?></li>
-    <li>Created At: <?= htmlspecialchars($profile['created_at']) ?></li>
-    <li>Updated At: <?= htmlspecialchars($profile['updated_at']) ?></li>
-</ul>
+            <p class="section-subtitle" style="margin-bottom:0;">
+                Manage your academic identity, account information and profile settings.
+            </p>
 
-<?php if ($profile['role_name'] === 'student'): ?>
-    <h2>Student Information</h2>
-
-    <ul>
-        <li>Student Number: <?= htmlspecialchars($profile['student_no'] ?? '-') ?></li>
-        <li>Faculty: <?= htmlspecialchars($profile['faculty_name'] ?? '-') ?></li>
-        <li>Department: <?= htmlspecialchars($profile['department_name'] ?? '-') ?></li>
-        <li>Class Year: <?= $profile['class_year'] !== null ? (int) $profile['class_year'] : '-' ?></li>
-        <li>Program Type: <?= htmlspecialchars($profile['program_type'] ?? '-') ?></li>
-    </ul>
-<?php endif; ?>
-
-<hr>
-
-<h2>Edit Profile</h2>
-
-<form method="POST" action="">
-    <div>
-        <label for="phone">Phone</label><br>
-        <input
-            type="text"
-            id="phone"
-            name="phone"
-            value="<?= htmlspecialchars($phone) ?>"
-            placeholder="Example: 0555 111 2233"
-        >
-    </div>
-
-    <?php if ($profile['role_name'] === 'student'): ?>
-        <br>
-
-        <div>
-            <label for="program_type">Program Type</label><br>
-            <input
-                type="text"
-                id="program_type"
-                name="program_type"
-                value="<?= htmlspecialchars($programType) ?>"
-                placeholder="Example: 100% Turkish"
-            >
         </div>
-    <?php endif; ?>
 
-    <br>
+        <!-- MESSAGE -->
+        <?php if ($message !== ''): ?>
+            <div class="alert <?= $messageStatus ? 'alert-success' : 'alert-error' ?>" style="margin-bottom:24px;">
+                <?= htmlspecialchars($message) ?>
+            </div>
+        <?php endif; ?>
 
-    <button type="submit">Update Profile</button>
-</form>
+        <!-- ACCOUNT -->
+        <div class="card" style="margin-bottom:32px;">
+
+            <h2 style="margin-top:0;">Account Information</h2>
+
+            <div class="grid grid-2">
+
+                <div>
+                    <p><strong>User ID:</strong> <?= (int) $profile['user_id'] ?></p>
+                    <p><strong>Role:</strong> <?= htmlspecialchars($profile['role_name']) ?></p>
+                    <p><strong>Full Name:</strong> <?= htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name']) ?></p>
+                    <p><strong>Email:</strong> <?= htmlspecialchars($profile['email']) ?></p>
+                </div>
+
+                <div>
+                    <p>
+                        <strong>Account Active:</strong>
+
+                        <?php if ((int) $profile['is_active'] === 1): ?>
+                            <span class="badge badge-success">Yes</span>
+                        <?php else: ?>
+                            <span class="badge badge-warning">No</span>
+                        <?php endif; ?>
+                    </p>
+
+                    <p><strong>Created At:</strong> <?= htmlspecialchars($profile['created_at']) ?></p>
+                    <p><strong>Updated At:</strong> <?= htmlspecialchars($profile['updated_at']) ?></p>
+                    <p><strong>Phone:</strong> <?= htmlspecialchars($profile['phone'] ?? '-') ?></p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- STUDENT -->
+        <?php if ($profile['role_name'] === 'student'): ?>
+
+            <div class="card" style="margin-bottom:32px;">
+
+                <h2 style="margin-top:0;">Student Information</h2>
+
+                <div class="grid grid-2">
+
+                    <div>
+                        <p><strong>Student Number:</strong> <?= htmlspecialchars($profile['student_no'] ?? '-') ?></p>
+                        <p><strong>Faculty:</strong> <?= htmlspecialchars($profile['faculty_name'] ?? '-') ?></p>
+                        <p><strong>Department:</strong> <?= htmlspecialchars($profile['department_name'] ?? '-') ?></p>
+                    </div>
+
+                    <div>
+                        <p><strong>Class Year:</strong> <?= $profile['class_year'] !== null ? (int) $profile['class_year'] : '-' ?></p>
+                        <p><strong>Program Type:</strong> <?= htmlspecialchars($profile['program_type'] ?? '-') ?></p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        <?php endif; ?>
+
+        <!-- EDIT -->
+        <div class="card">
+
+            <h2 style="margin-top:0;">Edit Profile</h2>
+
+            <form method="POST" action="">
+
+                <div class="grid grid-2">
+
+                    <div class="form-group">
+                        <label for="phone" class="form-label">Phone</label>
+
+                        <input
+                            type="text"
+                            id="phone"
+                            name="phone"
+                            class="form-control"
+                            value="<?= htmlspecialchars($phone) ?>"
+                            placeholder="Example: 0555 111 2233"
+                        >
+                    </div>
+
+                    <?php if ($profile['role_name'] === 'student'): ?>
+
+                        <div class="form-group">
+                            <label for="program_type" class="form-label">Program Type</label>
+
+                            <input
+                                type="text"
+                                id="program_type"
+                                name="program_type"
+                                class="form-control"
+                                value="<?= htmlspecialchars($programType) ?>"
+                                placeholder="Example: 100% Turkish"
+                            >
+                        </div>
+
+                    <?php endif; ?>
+
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Update Profile
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+</section>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

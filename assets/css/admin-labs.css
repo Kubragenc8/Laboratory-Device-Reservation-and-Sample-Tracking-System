@@ -1,0 +1,53 @@
+/* ===== HERO ===== */
+.admin-labs-hero {
+  margin-bottom: 32px;
+}
+
+/* ===== FILTERS ===== */
+.admin-lab-filter-grid {
+  gap: 24px;
+}
+
+/* ===== SUMMARY ===== */
+.admin-lab-summary strong {
+  color: var(--color-primary-dark);
+  font-size: 20px;
+}
+
+/* ===== TABLE ===== */
+.table td {
+  vertical-align: middle;
+}
+
+.table td .badge {
+  min-width: 80px;
+  justify-content: center;
+}
+
+.table td .btn {
+  white-space: nowrap;
+}
+
+/* ===== LOCATION / PHONE ===== */
+.admin-lab-contact-cell {
+  line-height: 1.5;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 1400px) {
+  .table {
+    min-width: 1450px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .card .flex {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card .flex .btn {
+    width: 100%;
+  }
+}

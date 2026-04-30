@@ -1,0 +1,37 @@
+/* ===== HERO ===== */
+.profile-hero {
+  margin-bottom: 32px;
+}
+
+/* ===== ACCOUNT ===== */
+.profile-account-card {
+  border-left: 4px solid var(--color-primary);
+}
+
+/* ===== STUDENT ===== */
+.profile-student-card {
+  border-left: 4px solid rgba(111, 247, 245, 0.35);
+}
+
+/* ===== FORM ===== */
+.profile-form-card .form-control {
+  min-height: 52px;
+}
+
+/* ===== STATUS ===== */
+.badge {
+  min-width: 70px;
+  text-align: center;
+}
+
+/* ===== GRID ===== */
+.profile-grid {
+  gap: 24px;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .profile-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
