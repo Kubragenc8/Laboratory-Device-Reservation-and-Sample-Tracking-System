@@ -27,74 +27,228 @@ $equipmentSummary = getLabEquipmentSummary($pdo, (int) $labId);
 $pageTitle = 'Laboratory Detail';
 $pageCss = 'labs.css';
 
+function formatLabDetailType(?string $type): string
+{
+    $type = trim((string) $type);
+
+    if ($type === '') {
+        return '-';
+    }
+
+    return ucwords(str_replace('_', ' ', $type));
+}
+
+function labDetailAvailabilityBadgeClass(string $statusLabel): string
+{
+    if ($statusLabel === 'Available') {
+        return 'badge-success';
+    }
+
+    if ($statusLabel === 'Reserved Now') {
+        return 'badge-warning';
+    }
+
+    if ($statusLabel === 'Maintenance' || $statusLabel === 'Passive') {
+        return 'badge-error';
+    }
+
+    return 'badge-warning';
+}
+
+function labDetailStationStatusBadgeClass(string $status): string
+{
+    if ($status === 'active') {
+        return 'badge-success';
+    }
+
+    if ($status === 'maintenance') {
+        return 'badge-warning';
+    }
+
+    if ($status === 'passive') {
+        return 'badge-error';
+    }
+
+    return 'badge-info';
+}
+
+$stationCards = [];
+$activeStationCount = 0;
+$availableNowCount = 0;
+$totalEquipmentCount = 0;
+$availableEquipmentCount = 0;
+$maintenanceEquipmentCount = 0;
+$passiveEquipmentCount = 0;
+
+foreach ($stations as $station) {
+    $availability = getStationComputedAvailability(
+        $pdo,
+        (int) $station['station_id']
+    );
+
+    if ($station['status'] === 'active') {
+        $activeStationCount++;
+    }
+
+    if ($availability['status_label'] === 'Available') {
+        $availableNowCount++;
+    }
+
+    $totalEquipmentCount += (int) ($station['total_equipment_count'] ?? 0);
+    $availableEquipmentCount += (int) ($station['available_equipment_count'] ?? 0);
+    $maintenanceEquipmentCount += (int) ($station['maintenance_equipment_count'] ?? 0);
+    $passiveEquipmentCount += (int) ($station['passive_equipment_count'] ?? 0);
+
+    $stationCards[] = [
+        'station' => $station,
+        'availability' => $availability
+    ];
+}
+
 require_once __DIR__ . '/../includes/header.php';
 
 ?>
 
-<section class="page-section">
+<section class="page-section lab-detail-page">
     <div class="container">
 
-        <!-- BACK -->
-        <div style="margin-bottom:24px;">
+        <!-- TOP ACTIONS -->
+        <div class="lab-detail-topbar">
             <a href="labs.php" class="btn btn-outline">
                 ← Back to Laboratories
+            </a>
+
+            <a
+                href="reserve.php?lab_id=<?= (int) $lab['lab_id'] ?>"
+                class="btn btn-primary"
+            >
+                Reserve from This Lab
             </a>
         </div>
 
         <!-- HERO -->
-        <div class="card" style="margin-bottom:32px;">
-            <div class="grid grid-2" style="align-items:start;">
+        <div class="card lab-detail-hero-card" style="margin-bottom:32px;">
+            <div class="lab-detail-hero-grid">
 
                 <div>
-                    <p style="color:var(--color-muted); margin-bottom:8px;">
+                    <span class="badge badge-info">
                         <?= htmlspecialchars($lab['lab_code']) ?>
-                    </p>
+                    </span>
 
-                    <h1 class="section-title" style="margin-bottom:12px;">
+                    <h1 class="section-title" style="margin-bottom:12px; margin-top:16px;">
                         <?= htmlspecialchars($lab['lab_name']) ?>
                     </h1>
 
-                    <p class="section-subtitle">
+                    <p class="section-subtitle" style="margin-bottom:0;">
                         <?= nl2br(htmlspecialchars($lab['description'] ?? 'No description available.')) ?>
                     </p>
                 </div>
 
-                <div class="card" style="background:var(--color-surface-soft);">
-                    <p>
-                        <strong>Type:</strong>
-                        <?= htmlspecialchars($lab['lab_type']) ?>
-                    </p>
+                <div class="lab-detail-info-card">
 
-                    <p>
-                        <strong>Faculty:</strong>
-                        <?= htmlspecialchars($lab['faculty_name']) ?>
-                    </p>
+                    <div class="lab-detail-info-row">
+                        <span>Type</span>
+                        <strong><?= htmlspecialchars(formatLabDetailType($lab['lab_type'] ?? '')) ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>Department:</strong>
-                        <?= htmlspecialchars($lab['department_name']) ?>
-                    </p>
+                    <div class="lab-detail-info-row">
+                        <span>Faculty</span>
+                        <strong><?= htmlspecialchars($lab['faculty_name']) ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>Location:</strong>
-                        <?= htmlspecialchars($lab['location'] ?? '-') ?>
-                    </p>
+                    <div class="lab-detail-info-row">
+                        <span>Department</span>
+                        <strong><?= htmlspecialchars($lab['department_name']) ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>Phone:</strong>
-                        <?= htmlspecialchars($lab['phone'] ?? '-') ?>
-                    </p>
+                    <div class="lab-detail-info-row">
+                        <span>Location</span>
+                        <strong><?= htmlspecialchars($lab['location'] ?? '-') ?></strong>
+                    </div>
+
+                    <div class="lab-detail-info-row">
+                        <span>Phone</span>
+                        <strong><?= htmlspecialchars($lab['phone'] ?? '-') ?></strong>
+                    </div>
+
                 </div>
 
             </div>
         </div>
 
-        <!-- EQUIPMENT -->
-        <div class="card" style="margin-bottom:32px;">
-            <h2 style="margin-top:0;">Equipment Summary</h2>
+        <!-- KPI -->
+        <div class="lab-detail-kpi-grid" style="margin-bottom:32px;">
+
+            <div class="card card-hover lab-detail-kpi-card">
+                <span>Total Stations</span>
+                <strong><?= count($stations) ?></strong>
+                <p>All stations connected to this laboratory.</p>
+            </div>
+
+            <div class="card card-hover lab-detail-kpi-card is-active">
+                <span>Active Stations</span>
+                <strong><?= (int) $activeStationCount ?></strong>
+                <p>Stations open for reservation workflow.</p>
+            </div>
+
+            <div class="card card-hover lab-detail-kpi-card is-available">
+                <span>Available Now</span>
+                <strong><?= (int) $availableNowCount ?></strong>
+                <p>Stations not currently reserved.</p>
+            </div>
+
+            <div class="card card-hover lab-detail-kpi-card is-equipment">
+                <span>Total Equipment</span>
+                <strong><?= (int) $totalEquipmentCount ?></strong>
+                <p>Equipment assigned to stations in this lab.</p>
+            </div>
+
+        </div>
+
+        <!-- EQUIPMENT SUMMARY -->
+        <div class="card lab-detail-section-card" style="margin-bottom:32px;">
+            <div class="lab-detail-section-header">
+                <div>
+                    <h2 style="margin-top:0; margin-bottom:8px;">
+                        Equipment Summary
+                    </h2>
+
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        Equipment types and status counts connected to this laboratory.
+                    </p>
+                </div>
+
+                <span class="badge badge-info">
+                    <?= count($equipmentSummary) ?> Type<?= count($equipmentSummary) === 1 ? '' : 's' ?>
+                </span>
+            </div>
+
+            <div class="lab-detail-equipment-overview">
+
+                <div>
+                    <span>Total</span>
+                    <strong><?= (int) $totalEquipmentCount ?></strong>
+                </div>
+
+                <div>
+                    <span>Available</span>
+                    <strong><?= (int) $availableEquipmentCount ?></strong>
+                </div>
+
+                <div>
+                    <span>Maintenance</span>
+                    <strong><?= (int) $maintenanceEquipmentCount ?></strong>
+                </div>
+
+                <div>
+                    <span>Passive</span>
+                    <strong><?= (int) $passiveEquipmentCount ?></strong>
+                </div>
+
+            </div>
 
             <?php if (count($equipmentSummary) > 0): ?>
-                <div class="table-wrapper">
+                <div class="table-wrapper lab-detail-table-wrapper">
                     <table class="table">
                         <thead>
                             <tr>
@@ -135,7 +289,7 @@ require_once __DIR__ . '/../includes/header.php';
                                     </td>
 
                                     <td>
-                                        <span class="badge badge-warning">
+                                        <span class="badge badge-error">
                                             <?= (int) $equipment['passive_count'] ?>
                                         </span>
                                     </td>
@@ -145,126 +299,148 @@ require_once __DIR__ . '/../includes/header.php';
                     </table>
                 </div>
             <?php else: ?>
-                <div class="alert alert-success">
+                <div class="alert alert-success" style="margin-bottom:0;">
                     No equipment found for this laboratory.
                 </div>
             <?php endif; ?>
         </div>
 
         <!-- STATIONS -->
-        <div>
-            <h2 class="section-title">Stations</h2>
+        <div class="lab-detail-section-header" style="margin-bottom:24px;">
+            <div>
+                <h2 class="section-title" style="margin-bottom:8px;">
+                    Stations
+                </h2>
 
-            <?php if (count($stations) > 0): ?>
-                <div class="grid grid-3">
-                    <?php foreach ($stations as $station): ?>
-                        <?php
-                        $availability = getStationComputedAvailability(
-                            $pdo,
-                            (int) $station['station_id']
-                        );
-                        ?>
+                <p class="section-subtitle" style="margin-bottom:0;">
+                    Select a station to inspect equipment or start a reservation.
+                </p>
+            </div>
 
-                        <div class="card card-hover lab-card">
-                            <div class="lab-card-top">
-                                <div>
-                                    <p class="lab-code">
-                                        <?= htmlspecialchars($station['station_code']) ?>
-                                    </p>
-
-                                    <h3 style="margin:0;">
-                                        <?= htmlspecialchars($station['station_name']) ?>
-                                    </h3>
-                                </div>
-
-                                <?php if ($availability['status_label'] === 'Available'): ?>
-                                    <span class="badge badge-success">
-                                        Available
-                                    </span>
-                                <?php elseif ($availability['status_label'] === 'Reserved Now'): ?>
-                                    <span class="badge badge-warning">
-                                        Reserved Now
-                                    </span>
-                                <?php else: ?>
-                                    <span class="badge badge-warning">
-                                        <?= htmlspecialchars($availability['status_label']) ?>
-                                    </span>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="lab-meta">
-                                <p>
-                                    <strong>Type:</strong>
-                                    <?= htmlspecialchars($station['type_name']) ?>
-                                </p>
-
-                                <p>
-                                    <strong>Capacity:</strong>
-                                    <?= (int) $station['capacity'] ?>
-                                </p>
-
-                                <p>
-                                    <strong>Total Equipment:</strong>
-                                    <?= (int) $station['total_equipment_count'] ?>
-                                </p>
-
-                                <p>
-                                    <strong>Available Equipment:</strong>
-                                    <?= (int) $station['available_equipment_count'] ?>
-                                </p>
-
-                                <p>
-                                    <strong>Maintenance Equipment:</strong>
-                                    <?= (int) $station['maintenance_equipment_count'] ?>
-                                </p>
-
-                                <p>
-                                    <strong>Passive Equipment:</strong>
-                                    <?= (int) $station['passive_equipment_count'] ?>
-                                </p>
-                            </div>
-
-                            <div class="lab-footer">
-                                <a
-                                    href="station-detail.php?id=<?= (int) $station['station_id'] ?>"
-                                    class="btn btn-outline"
-                                    style="width:100%; margin-bottom:12px;"
-                                >
-                                    View Station
-                                </a>
-
-                                <?php if ($station['status'] === 'active'): ?>
-                                    <a
-                                        href="reserve.php?lab_id=<?= (int) $lab['lab_id'] ?>&station_id=<?= (int) $station['station_id'] ?>"
-                                        class="btn btn-primary"
-                                        style="width:100%;"
-                                    >
-                                        Reserve
-                                    </a>
-                                <?php else: ?>
-                                    <button
-                                        type="button"
-                                        class="btn btn-secondary"
-                                        style="width:100%;"
-                                        disabled
-                                    >
-                                        Reservation Closed
-                                    </button>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php else: ?>
-                <div class="card labs-empty">
-                    <h3>No station found for this laboratory.</h3>
-
-                    <p class="section-subtitle">
-                        This laboratory currently has no active station listings.
-                    </p>
-                </div>
-            <?php endif; ?>
+            <span class="badge badge-info">
+                <?= count($stations) ?> Station<?= count($stations) === 1 ? '' : 's' ?>
+            </span>
         </div>
+
+        <?php if (count($stationCards) > 0): ?>
+            <div class="lab-detail-station-grid">
+
+                <?php foreach ($stationCards as $item): ?>
+                    <?php
+                    $station = $item['station'];
+                    $availability = $item['availability'];
+                    $availabilityLabel = $availability['status_label'] ?? 'Unknown';
+                    ?>
+
+                    <article class="card card-hover lab-detail-station-card">
+
+                        <div class="lab-detail-station-header">
+                            <div>
+                                <span class="lab-code">
+                                    <?= htmlspecialchars($station['station_code']) ?>
+                                </span>
+
+                                <h3>
+                                    <?= htmlspecialchars($station['station_name']) ?>
+                                </h3>
+                            </div>
+
+                            <span class="badge <?= labDetailAvailabilityBadgeClass($availabilityLabel) ?>">
+                                <?= htmlspecialchars($availabilityLabel) ?>
+                            </span>
+                        </div>
+
+                        <div class="lab-detail-station-meta">
+
+                            <div class="lab-detail-station-meta-row">
+                                <span>Type</span>
+                                <strong><?= htmlspecialchars($station['type_name']) ?></strong>
+                            </div>
+
+                            <div class="lab-detail-station-meta-row">
+                                <span>Capacity</span>
+                                <strong><?= (int) $station['capacity'] ?></strong>
+                            </div>
+
+                            <div class="lab-detail-station-meta-row">
+                                <span>Status</span>
+                                <strong>
+                                    <span class="badge <?= labDetailStationStatusBadgeClass($station['status']) ?>">
+                                        <?= htmlspecialchars(ucfirst($station['status'])) ?>
+                                    </span>
+                                </strong>
+                            </div>
+
+                        </div>
+
+                        <div class="lab-detail-station-equipment-grid">
+
+                            <div>
+                                <span>Total Equipment</span>
+                                <strong><?= (int) $station['total_equipment_count'] ?></strong>
+                            </div>
+
+                            <div>
+                                <span>Available</span>
+                                <strong><?= (int) $station['available_equipment_count'] ?></strong>
+                            </div>
+
+                            <div>
+                                <span>Maintenance</span>
+                                <strong><?= (int) $station['maintenance_equipment_count'] ?></strong>
+                            </div>
+
+                            <div>
+                                <span>Passive</span>
+                                <strong><?= (int) $station['passive_equipment_count'] ?></strong>
+                            </div>
+
+                        </div>
+
+                        <div class="lab-detail-station-actions">
+                            <a
+                                href="station-detail.php?id=<?= (int) $station['station_id'] ?>"
+                                class="btn btn-outline"
+                            >
+                                View Station
+                            </a>
+
+                            <?php if ($station['status'] === 'active'): ?>
+                                <a
+                                    href="reserve.php?lab_id=<?= (int) $lab['lab_id'] ?>&station_id=<?= (int) $station['station_id'] ?>"
+                                    class="btn btn-primary"
+                                >
+                                    Reserve
+                                </a>
+                            <?php else: ?>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    disabled
+                                >
+                                    Reservation Closed
+                                </button>
+                            <?php endif; ?>
+                        </div>
+
+                    </article>
+
+                <?php endforeach; ?>
+
+            </div>
+        <?php else: ?>
+            <div class="card labs-empty">
+                <span class="badge badge-warning">
+                    No Station
+                </span>
+
+                <h3>No station found for this laboratory.</h3>
+
+                <p class="section-subtitle">
+                    This laboratory currently has no active station listings.
+                </p>
+            </div>
+        <?php endif; ?>
 
     </div>
 </section>

@@ -66,6 +66,49 @@ function formatReservationEditDateTime(?string $value): string
     }
 }
 
+function formatReservationEditDate(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('d.m.Y');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
+function formatReservationEditTime(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('H:i');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
+function reservationEditBadgeClass(string $status): string
+{
+    if ($status === 'active') {
+        return 'badge-success';
+    }
+
+    if ($status === 'cancelled') {
+        return 'badge-error';
+    }
+
+    if ($status === 'completed') {
+        return 'badge-info';
+    }
+
+    return 'badge-warning';
+}
+
 $message = '';
 $messageStatus = false;
 $conflicts = [];
@@ -179,25 +222,68 @@ require_once __DIR__ . '/../includes/header.php';
 
 ?>
 
-<section class="page-section">
+<section class="page-section reservation-edit-page">
     <div class="container">
 
-        <!-- BACK -->
-        <div style="margin-bottom:24px;">
-            <a href="reservation-detail.php?id=<?= (int) $reservation['reservation_id'] ?>" class="btn btn-outline">
+        <!-- TOP ACTIONS -->
+        <div class="reservation-detail-topbar">
+            <a
+                href="reservation-detail.php?id=<?= (int) $reservation['reservation_id'] ?>"
+                class="btn btn-outline"
+            >
                 ← Back to Reservation Detail
+            </a>
+
+            <a href="my-reservations.php" class="btn btn-secondary">
+                My Reservations
             </a>
         </div>
 
         <!-- HERO -->
-        <div class="card" style="margin-bottom:32px;">
-            <h1 class="section-title" style="margin-bottom:8px;">
-                Edit Reservation
-            </h1>
+        <div class="card reservation-detail-hero-card" style="margin-bottom:32px;">
+            <div class="reservation-detail-hero-grid">
 
-            <p class="section-subtitle" style="margin-bottom:0;">
-                Reservation #<?= (int) $reservation['reservation_id'] ?>
-            </p>
+                <div>
+                    <span class="badge badge-info">
+                        Edit Reservation #<?= (int) $reservation['reservation_id'] ?>
+                    </span>
+
+                    <h1 class="section-title" style="margin-bottom:10px; margin-top:16px;">
+                        <?= htmlspecialchars($reservation['lab_code'] . ' — ' . $reservation['station_code']) ?>
+                    </h1>
+
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        Update the time interval or purpose of your future active reservation.
+                    </p>
+                </div>
+
+                <div class="reservation-detail-status-card">
+                    <div class="reservation-detail-status-header">
+                        <span>Current Status</span>
+
+                        <span class="badge <?= reservationEditBadgeClass($reservation['status']) ?>">
+                            <?= htmlspecialchars(ucfirst($reservation['status'])) ?>
+                        </span>
+                    </div>
+
+                    <div class="reservation-detail-status-meta">
+                        <p>
+                            <span>Current Start</span>
+                            <strong>
+                                <?= htmlspecialchars(formatReservationEditDateTime($reservation['start_time'])) ?>
+                            </strong>
+                        </p>
+
+                        <p>
+                            <span>Current End</span>
+                            <strong>
+                                <?= htmlspecialchars(formatReservationEditDateTime($reservation['end_time'])) ?>
+                            </strong>
+                        </p>
+                    </div>
+                </div>
+
+            </div>
         </div>
 
         <!-- MESSAGE -->
@@ -212,77 +298,107 @@ require_once __DIR__ . '/../includes/header.php';
 
         <!-- NOT EDITABLE -->
         <?php if (!$canEdit): ?>
-            <div class="card" style="margin-bottom:32px;">
+            <div class="card reservation-detail-section-card" style="margin-bottom:32px;">
                 <h2 style="margin-top:0;">Reservation Cannot Be Edited</h2>
 
                 <div class="alert alert-error">
                     Only future active reservations can be edited.
                 </div>
 
-                <p>
-                    <strong>Current Status:</strong>
-                    <?= htmlspecialchars(ucfirst($reservation['status'])) ?>
-                </p>
+                <div class="reservation-detail-info-grid">
+                    <div class="reservation-detail-info-row">
+                        <span>Current Status</span>
+                        <strong><?= htmlspecialchars(ucfirst($reservation['status'])) ?></strong>
+                    </div>
 
-                <p>
-                    <strong>Start Time:</strong>
-                    <?= htmlspecialchars(formatReservationEditDateTime($reservation['start_time'])) ?>
-                </p>
+                    <div class="reservation-detail-info-row">
+                        <span>Start Time</span>
+                        <strong><?= htmlspecialchars(formatReservationEditDateTime($reservation['start_time'])) ?></strong>
+                    </div>
 
-                <p>
-                    <strong>End Time:</strong>
-                    <?= htmlspecialchars(formatReservationEditDateTime($reservation['end_time'])) ?>
-                </p>
+                    <div class="reservation-detail-info-row">
+                        <span>End Time</span>
+                        <strong><?= htmlspecialchars(formatReservationEditDateTime($reservation['end_time'])) ?></strong>
+                    </div>
+                </div>
             </div>
         <?php endif; ?>
 
         <!-- SUMMARY -->
-        <div class="card" style="margin-bottom:32px;">
-            <h2 style="margin-top:0;">Reservation Summary</h2>
-
-            <div class="grid grid-2">
+        <div class="card reservation-detail-section-card" style="margin-bottom:32px;">
+            <div class="reservation-detail-section-header">
                 <div>
-                    <p>
-                        <strong>Laboratory:</strong>
-                        <?= htmlspecialchars($reservation['lab_code'] . ' - ' . $reservation['lab_name']) ?>
-                    </p>
+                    <h2 style="margin-top:0; margin-bottom:8px;">Reservation Summary</h2>
 
-                    <p>
-                        <strong>Station:</strong>
-                        <?= htmlspecialchars($reservation['station_code'] . ' - ' . $reservation['station_name']) ?>
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        Check the selected laboratory and station before saving changes.
                     </p>
+                </div>
 
-                    <p>
-                        <strong>Location:</strong>
+                <span class="badge <?= reservationEditBadgeClass($reservation['status']) ?>">
+                    <?= htmlspecialchars(ucfirst($reservation['status'])) ?>
+                </span>
+            </div>
+
+            <div class="reservation-detail-info-grid">
+
+                <div class="reservation-detail-info-row">
+                    <span>Laboratory</span>
+                    <strong>
+                        <?= htmlspecialchars($reservation['lab_code'] . ' — ' . $reservation['lab_name']) ?>
+                    </strong>
+                </div>
+
+                <div class="reservation-detail-info-row">
+                    <span>Station</span>
+                    <strong>
+                        <?= htmlspecialchars($reservation['station_code'] . ' — ' . $reservation['station_name']) ?>
+                    </strong>
+                </div>
+
+                <div class="reservation-detail-info-row">
+                    <span>Location</span>
+                    <strong>
                         <?= htmlspecialchars($reservation['location'] ?? '-') ?>
-                    </p>
+                    </strong>
                 </div>
 
-                <div>
-                    <p>
-                        <strong>Status:</strong>
-                        <?= htmlspecialchars(ucfirst($reservation['status'])) ?>
-                    </p>
-
-                    <p>
-                        <strong>Current Start:</strong>
-                        <?= htmlspecialchars(formatReservationEditDateTime($reservation['start_time'])) ?>
-                    </p>
-
-                    <p>
-                        <strong>Current End:</strong>
-                        <?= htmlspecialchars(formatReservationEditDateTime($reservation['end_time'])) ?>
-                    </p>
+                <div class="reservation-detail-info-row">
+                    <span>Current Date</span>
+                    <strong>
+                        <?= htmlspecialchars(formatReservationEditDate($reservation['start_time'])) ?>
+                    </strong>
                 </div>
+
+                <div class="reservation-detail-info-row">
+                    <span>Current Time</span>
+                    <strong>
+                        <?= htmlspecialchars(formatReservationEditTime($reservation['start_time'])) ?>
+                        —
+                        <?= htmlspecialchars(formatReservationEditTime($reservation['end_time'])) ?>
+                    </strong>
+                </div>
+
+                <div class="reservation-detail-info-row">
+                    <span>Purpose</span>
+                    <strong>
+                        <?= htmlspecialchars(trim($reservation['purpose'] ?? '') !== '' ? $reservation['purpose'] : '-') ?>
+                    </strong>
+                </div>
+
             </div>
         </div>
 
         <!-- CONFLICTS -->
         <?php if (!empty($conflicts)): ?>
-            <div class="card" style="margin-bottom:32px;">
+            <div class="card reservation-detail-section-card" style="margin-bottom:32px;">
                 <h2 style="margin-top:0;">Conflicting Reservations</h2>
 
-                <div class="table-wrapper">
+                <p class="section-subtitle">
+                    The selected time interval overlaps with another active reservation.
+                </p>
+
+                <div class="table-wrapper reservation-detail-history-table">
                     <table class="table">
                         <thead>
                             <tr>
@@ -302,7 +418,11 @@ require_once __DIR__ . '/../includes/header.php';
                                     <td><?= htmlspecialchars($conflict['user_full_name']) ?></td>
                                     <td><?= htmlspecialchars(formatReservationEditDateTime($conflict['start_time'])) ?></td>
                                     <td><?= htmlspecialchars(formatReservationEditDateTime($conflict['end_time'])) ?></td>
-                                    <td><?= htmlspecialchars($conflict['status']) ?></td>
+                                    <td>
+                                        <span class="badge <?= reservationEditBadgeClass($conflict['status']) ?>">
+                                            <?= htmlspecialchars(ucfirst($conflict['status'])) ?>
+                                        </span>
+                                    </td>
                                     <td><?= htmlspecialchars($conflict['purpose'] ?? '-') ?></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -314,11 +434,24 @@ require_once __DIR__ . '/../includes/header.php';
 
         <!-- FORM -->
         <?php if ($canEdit): ?>
-            <div class="card">
-                <h2 style="margin-top:0;">Update Reservation</h2>
+            <div class="card reservation-edit-form-card">
+                <div class="reservation-detail-section-header">
+                    <div>
+                        <h2 style="margin-top:0; margin-bottom:8px;">Update Reservation</h2>
 
-                <form method="POST" action="">
-                    <div class="grid grid-2">
+                        <p class="section-subtitle" style="margin-bottom:0;">
+                            Choose a future time interval. The system will block overlapping active reservations.
+                        </p>
+                    </div>
+
+                    <span class="badge badge-info">
+                        Editable
+                    </span>
+                </div>
+
+                <form method="POST" action="" id="reservationEditForm">
+
+                    <div class="reservation-detail-time-grid" style="margin-bottom:24px;">
                         <div class="form-group">
                             <label for="start_time" class="form-label">Start Time</label>
 
@@ -330,6 +463,10 @@ require_once __DIR__ . '/../includes/header.php';
                                 value="<?= htmlspecialchars(datetimeLocalEditValue($startTimeValue)) ?>"
                                 required
                             >
+
+                            <small class="field-feedback">
+                                Select the new beginning time.
+                            </small>
                         </div>
 
                         <div class="form-group">
@@ -343,6 +480,10 @@ require_once __DIR__ . '/../includes/header.php';
                                 value="<?= htmlspecialchars(datetimeLocalEditValue($endTimeValue)) ?>"
                                 required
                             >
+
+                            <small class="field-feedback">
+                                End time must be later than start time.
+                            </small>
                         </div>
                     </div>
 
@@ -354,12 +495,28 @@ require_once __DIR__ . '/../includes/header.php';
                             name="purpose"
                             class="form-control"
                             rows="4"
+                            maxlength="255"
+                            placeholder="Example: Database project study"
                         ><?= htmlspecialchars($purposeValue) ?></textarea>
+
+                        <small class="field-feedback">
+                            Optional. Maximum 255 characters.
+                        </small>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">
-                        Save Changes
-                    </button>
+                    <div class="reservation-edit-actions">
+                        <button type="submit" class="btn btn-primary">
+                            Save Changes
+                        </button>
+
+                        <a
+                            href="reservation-detail.php?id=<?= (int) $reservation['reservation_id'] ?>"
+                            class="btn btn-outline"
+                        >
+                            Cancel Editing
+                        </a>
+                    </div>
+
                 </form>
             </div>
         <?php endif; ?>
