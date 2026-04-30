@@ -14,6 +14,7 @@ if (isLoggedIn()) {
 
 $pageTitle = 'Login';
 $pageCss = 'auth.css';
+$pageJs = 'auth.js';
 
 $error = '';
 $successMessage = '';

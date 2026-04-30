@@ -215,67 +215,123 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pageTitle = 'Reserve Station';
 $pageCss = 'reservation.css';
+$pageJs = 'reservation.js';
 
 require_once __DIR__ . '/../includes/header.php';
 
 ?>
 
-<section class="page-section">
+<section
+    class="page-section"
+    data-reservation-page="reserve"
+    data-selected-lab-id="<?= $labId !== null ? (int) $labId : '' ?>"
+    data-selected-station-id="<?= $stationId !== null ? (int) $stationId : '' ?>"
+>
     <div class="container">
 
         <!-- HERO -->
-        <div class="card" style="margin-bottom:32px;">
-            <h1 class="section-title" style="margin-bottom:8px;">
-                Reserve Station
-            </h1>
+        <div class="card reservation-hero-card" style="margin-bottom:32px;">
+            <div class="reservation-hero-content">
+                <div>
+                    <span class="badge badge-info">
+                        Laboratory Reservation
+                    </span>
 
-            <p class="section-subtitle" style="margin-bottom:0;">
-                Complete your laboratory reservation through a structured,
-                conflict-safe academic workflow.
-            </p>
-        </div>
+                    <h1 class="section-title" style="margin-bottom:8px; margin-top:16px;">
+                        Reserve Station
+                    </h1>
 
-        <!-- STEP 1 -->
-        <div class="card" style="margin-bottom:24px;">
-            <h2 style="margin-top:0;">Step 1 — Select Laboratory</h2>
-
-            <form method="GET" action="">
-                <div class="form-group">
-                    <label for="lab_id" class="form-label">Laboratory</label>
-
-                    <select id="lab_id" name="lab_id" class="form-control" required>
-                        <option value="">Select laboratory</option>
-
-                        <?php foreach ($labs as $lab): ?>
-                            <option
-                                value="<?= (int) $lab['lab_id'] ?>"
-                                <?= selectedOption($labId, $lab['lab_id']) ?>
-                            >
-                                <?= htmlspecialchars($lab['lab_code'] . ' - ' . $lab['lab_name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        Complete your laboratory reservation through a structured,
+                        conflict-safe academic workflow.
+                    </p>
                 </div>
 
-                <button type="submit" class="btn btn-primary">
-                    Load Stations
-                </button>
-            </form>
+                <div class="reservation-hero-actions">
+                    <a href="labs.php" class="btn btn-outline">
+                        Browse Laboratories
+                    </a>
+
+                    <a href="my-reservations.php" class="btn btn-secondary">
+                        My Reservations
+                    </a>
+                </div>
+            </div>
         </div>
 
-        <!-- STEP 2 -->
-        <?php if ($labId): ?>
-            <div class="card" style="margin-bottom:24px;">
-                <h2 style="margin-top:0;">Step 2 — Select Station</h2>
+        <!-- FLOW STEPS -->
+        <div class="reservation-stepper" style="margin-bottom:24px;">
+            <div class="reservation-stepper-item is-active">
+                <span>1</span>
+                <strong>Lab</strong>
+            </div>
 
-                <form method="GET" action="">
-                    <input type="hidden" name="lab_id" value="<?= (int) $labId ?>">
+            <div class="reservation-stepper-item <?= $labId ? 'is-active' : '' ?>">
+                <span>2</span>
+                <strong>Station</strong>
+            </div>
+
+            <div class="reservation-stepper-item <?= $selectedStation ? 'is-active' : '' ?>">
+                <span>3</span>
+                <strong>Review</strong>
+            </div>
+
+            <div class="reservation-stepper-item <?= $selectedStation ? 'is-active' : '' ?>">
+                <span>4</span>
+                <strong>Reserve</strong>
+            </div>
+        </div>
+
+        <!-- STEP 1 + STEP 2 -->
+        <div class="card" style="margin-bottom:24px;">
+            <h2 style="margin-top:0;">Step 1 — Select Laboratory and Station</h2>
+
+            <p class="section-subtitle" style="margin-bottom:24px;">
+                Choose a laboratory first. Station list can be loaded dynamically with AJAX,
+                and the classic GET fallback stays available.
+            </p>
+
+            <form
+                method="GET"
+                action=""
+                id="reservationSelectionForm"
+                data-selected-station-id="<?= $stationId !== null ? (int) $stationId : '' ?>"
+            >
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="lab_id" class="form-label">Laboratory</label>
+
+                        <select id="lab_id" name="lab_id" class="form-control" required>
+                            <option value="">Select laboratory</option>
+
+                            <?php foreach ($labs as $lab): ?>
+                                <option
+                                    value="<?= (int) $lab['lab_id'] ?>"
+                                    <?= selectedOption($labId, $lab['lab_id']) ?>
+                                >
+                                    <?= htmlspecialchars($lab['lab_code'] . ' - ' . $lab['lab_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+
+                        <small class="field-feedback">
+                            Select a laboratory to list available stations.
+                        </small>
+                    </div>
 
                     <div class="form-group">
                         <label for="station_id" class="form-label">Station</label>
 
-                        <select id="station_id" name="station_id" class="form-control" required>
-                            <option value="">Select station</option>
+                        <select
+                            id="station_id"
+                            name="station_id"
+                            class="form-control"
+                            <?= $labId ? '' : 'disabled' ?>
+                            required
+                        >
+                            <option value="">
+                                <?= $labId ? 'Select station' : 'Select laboratory first' ?>
+                            </option>
 
                             <?php foreach ($stations as $station): ?>
                                 <?php
@@ -284,6 +340,9 @@ require_once __DIR__ . '/../includes/header.php';
 
                                 <option
                                     value="<?= (int) $station['station_id'] ?>"
+                                    data-status="<?= htmlspecialchars($station['status']) ?>"
+                                    data-code="<?= htmlspecialchars($station['station_code']) ?>"
+                                    data-name="<?= htmlspecialchars($station['station_name']) ?>"
                                     <?= selectedOption($stationId, $station['station_id']) ?>
                                     <?= $isActiveStation ? '' : 'disabled' ?>
                                 >
@@ -298,20 +357,34 @@ require_once __DIR__ . '/../includes/header.php';
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                    </div>
 
+                        <small class="field-feedback" id="stationSelectFeedback">
+                            Active stations can be selected for reservation.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="flex" style="gap:16px; flex-wrap:wrap;">
                     <button type="submit" class="btn btn-primary">
                         Select Station
                     </button>
-                </form>
-            </div>
-        <?php endif; ?>
+
+                    <a href="reserve.php" class="btn btn-outline">
+                        Clear Selection
+                    </a>
+                </div>
+            </form>
+        </div>
 
         <!-- STEP 3 -->
-        <?php if ($selectedStation): ?>
-            <div class="card" style="margin-bottom:24px;">
-                <h2 style="margin-top:0;">Step 3 — Selected Station Summary</h2>
+        <div
+            class="card"
+            id="selectedStationCard"
+            style="margin-bottom:24px; <?= $selectedStation ? '' : 'display:none;' ?>"
+        >
+            <h2 style="margin-top:0;">Step 2 — Selected Station Summary</h2>
 
+            <?php if ($selectedStation): ?>
                 <div class="grid grid-2">
                     <div>
                         <p>
@@ -338,7 +411,9 @@ require_once __DIR__ . '/../includes/header.php';
 
                         <p>
                             <strong>Status:</strong>
-                            <?= htmlspecialchars($selectedStation['station_status']) ?>
+                            <span class="badge <?= $selectedStation['station_status'] === 'active' ? 'badge-success' : 'badge-warning' ?>">
+                                <?= htmlspecialchars($selectedStation['station_status']) ?>
+                            </span>
                         </p>
 
                         <p>
@@ -347,8 +422,23 @@ require_once __DIR__ . '/../includes/header.php';
                         </p>
                     </div>
                 </div>
+            <?php endif; ?>
+
+            <div
+                id="stationEquipmentPanel"
+                class="reservation-equipment-panel"
+                data-station-id="<?= $selectedStation ? (int) $selectedStation['station_id'] : '' ?>"
+                style="margin-top:24px;"
+            >
+                <h3 style="margin-top:0;">Station Equipment</h3>
+
+                <div id="stationEquipmentList" class="reservation-equipment-list">
+                    <p style="color:var(--color-muted); margin-bottom:0;">
+                        Equipment list will be loaded when station is selected.
+                    </p>
+                </div>
             </div>
-        <?php endif; ?>
+        </div>
 
         <!-- MESSAGE -->
         <?php if ($message !== ''): ?>
@@ -360,9 +450,20 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         <?php endif; ?>
 
+        <!-- JS AVAILABILITY MESSAGE -->
+        <div
+            id="availabilityMessage"
+            class="reservation-availability-message"
+            style="display:none; margin-bottom:24px;"
+        ></div>
+
         <!-- CREATED -->
         <?php if ($createdReservationId): ?>
             <div class="card" style="margin-bottom:24px; text-align:center;">
+                <span class="badge badge-success">
+                    Success
+                </span>
+
                 <h3>Reservation Created Successfully</h3>
 
                 <p>
@@ -413,19 +514,25 @@ require_once __DIR__ . '/../includes/header.php';
 
         <!-- STEP 4 -->
         <?php if ($selectedStation): ?>
-            <div class="card">
-                <h2 style="margin-top:0;">Step 4 — Reservation Form</h2>
+            <div class="card" id="reservationFormCard">
+                <h2 style="margin-top:0;">Step 3 — Reservation Form</h2>
 
-                <form method="POST" action="">
+                <p class="section-subtitle" style="margin-bottom:24px;">
+                    Select a future time interval. The system prevents overlapping active reservations.
+                </p>
+
+                <form method="POST" action="" id="reservationForm">
                     <input
                         type="hidden"
                         name="lab_id"
+                        id="reservation_lab_id"
                         value="<?= (int) $selectedStation['lab_id'] ?>"
                     >
 
                     <input
                         type="hidden"
                         name="station_id"
+                        id="reservation_station_id"
                         value="<?= (int) $selectedStation['station_id'] ?>"
                     >
 
@@ -441,6 +548,10 @@ require_once __DIR__ . '/../includes/header.php';
                                 value="<?= htmlspecialchars(datetimeLocalValue($startTimeValue)) ?>"
                                 required
                             >
+
+                            <small class="field-feedback">
+                                Choose the beginning of your reservation.
+                            </small>
                         </div>
 
                         <div class="form-group">
@@ -454,6 +565,10 @@ require_once __DIR__ . '/../includes/header.php';
                                 value="<?= htmlspecialchars(datetimeLocalValue($endTimeValue)) ?>"
                                 required
                             >
+
+                            <small class="field-feedback">
+                                End time must be later than start time.
+                            </small>
                         </div>
                     </div>
 
@@ -465,8 +580,13 @@ require_once __DIR__ . '/../includes/header.php';
                             name="purpose"
                             class="form-control"
                             rows="4"
+                            maxlength="255"
                             placeholder="Example: Database project study"
                         ><?= htmlspecialchars($purposeValue) ?></textarea>
+
+                        <small class="field-feedback">
+                            Optional. Maximum 255 characters.
+                        </small>
                     </div>
 
                     <div class="flex" style="gap:16px; flex-wrap:wrap;">
@@ -475,6 +595,8 @@ require_once __DIR__ . '/../includes/header.php';
                             name="action"
                             value="check"
                             class="btn btn-secondary"
+                            id="checkAvailabilityButton"
+                            data-reservation-action="check"
                         >
                             Check Availability
                         </button>
@@ -484,6 +606,8 @@ require_once __DIR__ . '/../includes/header.php';
                             name="action"
                             value="create"
                             class="btn btn-primary"
+                            id="createReservationButton"
+                            data-reservation-action="create"
                         >
                             Create Reservation
                         </button>

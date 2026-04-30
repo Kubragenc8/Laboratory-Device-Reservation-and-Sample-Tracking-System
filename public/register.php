@@ -15,6 +15,7 @@ if (isLoggedIn()) {
 
 $pageTitle = 'Register';
 $pageCss = 'auth.css';
+$pageJs = 'auth.js';
 
 $errors = [];
 

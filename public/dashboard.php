@@ -71,114 +71,365 @@ $stmt->execute([
 ]);
 $nextReservation = $stmt->fetch();
 
+function formatDashboardDateTime(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('d.m.Y H:i');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
+function formatDashboardDate(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('d.m.Y');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
+function formatDashboardTime(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('H:i');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
 require_once __DIR__ . '/../includes/header.php';
 
 ?>
 
-<section class="page-section">
+<section class="page-section dashboard-page">
     <div class="container">
 
-        <!-- HEADER -->
-        <div class="card" style="margin-bottom:32px;">
-            <h1 class="section-title" style="margin-bottom:8px;">
-                Welcome, <?= htmlspecialchars(getCurrentUserName()) ?>
-            </h1>
+        <!-- HERO -->
+        <div class="card dashboard-hero-card" style="margin-bottom:32px;">
+            <div class="dashboard-hero-content">
 
-            <p class="section-subtitle" style="margin-bottom:0;">
-                Manage your laboratory workflow, reservations and academic station access.
-            </p>
+                <div>
+                    <span class="badge badge-info">
+                        Student Dashboard
+                    </span>
+
+                    <h1 class="section-title" style="margin-bottom:8px; margin-top:16px;">
+                        Welcome, <?= htmlspecialchars(getCurrentUserName()) ?>
+                    </h1>
+
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        Manage your laboratory workflow, reservations and academic station access
+                        from one clean dashboard.
+                    </p>
+                </div>
+
+                <div class="dashboard-hero-actions">
+                    <a href="reserve.php" class="btn btn-primary">
+                        New Reservation
+                    </a>
+
+                    <a href="labs.php" class="btn btn-outline">
+                        Browse Laboratories
+                    </a>
+                </div>
+
+            </div>
         </div>
 
         <!-- KPI -->
-        <div class="grid grid-3" style="margin-bottom:32px;">
+        <div class="dashboard-kpi-grid" style="margin-bottom:32px;">
 
-            <div class="card card-hover">
-                <h3>Active Reservations</h3>
-                <p style="font-size:36px; font-weight:700; color:var(--color-primary); margin:0;">
-                    <?= $activeReservationCount ?>
+            <div class="card card-hover dashboard-kpi-card is-active">
+                <span class="dashboard-kpi-label">
+                    Active Reservations
+                </span>
+
+                <strong>
+                    <?= (int) $activeReservationCount ?>
+                </strong>
+
+                <p>
+                    Currently active reservation records.
                 </p>
             </div>
 
-            <div class="card card-hover">
-                <h3>Upcoming</h3>
-                <p style="font-size:36px; font-weight:700; color:var(--color-info); margin:0;">
-                    <?= $upcomingReservationCount ?>
+            <div class="card card-hover dashboard-kpi-card is-upcoming">
+                <span class="dashboard-kpi-label">
+                    Upcoming
+                </span>
+
+                <strong>
+                    <?= (int) $upcomingReservationCount ?>
+                </strong>
+
+                <p>
+                    Future active reservations waiting for use.
                 </p>
             </div>
 
-            <div class="card card-hover">
-                <h3>Past Reservations</h3>
-                <p style="font-size:36px; font-weight:700; color:var(--color-muted); margin:0;">
-                    <?= $pastReservationCount ?>
+            <div class="card card-hover dashboard-kpi-card is-past">
+                <span class="dashboard-kpi-label">
+                    Past Reservations
+                </span>
+
+                <strong>
+                    <?= (int) $pastReservationCount ?>
+                </strong>
+
+                <p>
+                    Reservations whose end time has passed.
                 </p>
             </div>
 
         </div>
 
-        <!-- QUICK ACTIONS -->
-        <div class="card" style="margin-bottom:32px;">
-            <h2 style="margin-top:0;">Quick Actions</h2>
+        <!-- MAIN GRID -->
+        <div class="dashboard-main-grid">
 
-            <div class="flex" style="gap:16px; flex-wrap:wrap;">
+            <!-- QUICK ACTIONS -->
+            <div class="card dashboard-actions-card">
 
-                <a href="labs.php" class="btn btn-primary">
-                    Browse Laboratories
-                </a>
-
-                <a href="reserve.php" class="btn btn-secondary">
-                    New Reservation
-                </a>
-
-                <a href="my-reservations.php" class="btn btn-outline">
-                    My Reservations
-                </a>
-
-                <a href="profile.php" class="btn btn-outline">
-                    Profile
-                </a>
-
-            </div>
-        </div>
-
-        <!-- NEXT RESERVATION -->
-        <div class="card">
-
-            <h2 style="margin-top:0;">Upcoming Reservation</h2>
-
-            <?php if ($nextReservation): ?>
-
-                <div class="grid grid-2">
-
+                <div class="dashboard-section-header">
                     <div>
-                        <p><strong>Reservation ID:</strong> <?= (int) $nextReservation['reservation_id'] ?></p>
-                        <p><strong>Laboratory:</strong> <?= htmlspecialchars($nextReservation['lab_name']) ?></p>
-                        <p><strong>Station:</strong> <?= htmlspecialchars($nextReservation['station_code'] . ' - ' . $nextReservation['station_name']) ?></p>
-                    </div>
+                        <h2 style="margin-top:0; margin-bottom:8px;">
+                            Quick Actions
+                        </h2>
 
-                    <div>
-                        <p><strong>Start Time:</strong> <?= htmlspecialchars($nextReservation['start_time']) ?></p>
-                        <p><strong>End Time:</strong> <?= htmlspecialchars($nextReservation['end_time']) ?></p>
-                        <p>
-                            <strong>Status:</strong>
-                            <span class="badge badge-success">
-                                <?= htmlspecialchars($nextReservation['status']) ?>
-                            </span>
+                        <p class="section-subtitle" style="margin-bottom:0;">
+                            Continue your main workflow with one click.
                         </p>
                     </div>
 
+                    <span class="badge badge-info">
+                        Workflow
+                    </span>
                 </div>
 
-            <?php else: ?>
+                <div class="dashboard-action-grid">
 
-                <div class="alert alert-success">
-                    No upcoming active reservation found.
+                    <a href="labs.php" class="dashboard-action-item">
+                        <span>01</span>
+
+                        <div>
+                            <strong>Browse Laboratories</strong>
+                            <p>Explore available labs, departments and station types.</p>
+                        </div>
+                    </a>
+
+                    <a href="reserve.php" class="dashboard-action-item">
+                        <span>02</span>
+
+                        <div>
+                            <strong>New Reservation</strong>
+                            <p>Select a lab, choose a station and check availability.</p>
+                        </div>
+                    </a>
+
+                    <a href="my-reservations.php" class="dashboard-action-item">
+                        <span>03</span>
+
+                        <div>
+                            <strong>My Reservations</strong>
+                            <p>View, edit or cancel your existing reservations.</p>
+                        </div>
+                    </a>
+
+                    <a href="profile.php" class="dashboard-action-item">
+                        <span>04</span>
+
+                        <div>
+                            <strong>Profile</strong>
+                            <p>Review your student and account information.</p>
+                        </div>
+                    </a>
+
                 </div>
 
-                <a href="labs.php" class="btn btn-primary">
-                    Explore Laboratories
-                </a>
+            </div>
 
-            <?php endif; ?>
+            <!-- UPCOMING RESERVATION -->
+            <div class="card dashboard-upcoming-card">
+
+                <div class="dashboard-section-header">
+                    <div>
+                        <h2 style="margin-top:0; margin-bottom:8px;">
+                            Upcoming Reservation
+                        </h2>
+
+                        <p class="section-subtitle" style="margin-bottom:0;">
+                            Your nearest active reservation.
+                        </p>
+                    </div>
+
+                    <span class="badge <?= $nextReservation ? 'badge-success' : 'badge-warning' ?>">
+                        <?= $nextReservation ? 'Scheduled' : 'Empty' ?>
+                    </span>
+                </div>
+
+                <?php if ($nextReservation): ?>
+
+                    <div class="dashboard-next-date-card">
+                        <span>Date</span>
+
+                        <strong>
+                            <?= htmlspecialchars(formatDashboardDate($nextReservation['start_time'])) ?>
+                        </strong>
+                    </div>
+
+                    <div class="dashboard-next-time-grid">
+
+                        <div>
+                            <span>Start</span>
+
+                            <strong>
+                                <?= htmlspecialchars(formatDashboardTime($nextReservation['start_time'])) ?>
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>End</span>
+
+                            <strong>
+                                <?= htmlspecialchars(formatDashboardTime($nextReservation['end_time'])) ?>
+                            </strong>
+                        </div>
+
+                    </div>
+
+                    <div class="dashboard-next-meta">
+
+                        <div class="dashboard-next-meta-row">
+                            <span>Reservation ID</span>
+
+                            <strong>
+                                #<?= (int) $nextReservation['reservation_id'] ?>
+                            </strong>
+                        </div>
+
+                        <div class="dashboard-next-meta-row">
+                            <span>Laboratory</span>
+
+                            <strong>
+                                <?= htmlspecialchars($nextReservation['lab_name']) ?>
+                            </strong>
+                        </div>
+
+                        <div class="dashboard-next-meta-row">
+                            <span>Station</span>
+
+                            <strong>
+                                <?= htmlspecialchars($nextReservation['station_code'] . ' - ' . $nextReservation['station_name']) ?>
+                            </strong>
+                        </div>
+
+                        <div class="dashboard-next-meta-row">
+                            <span>Status</span>
+
+                            <strong>
+                                <?= htmlspecialchars(ucfirst($nextReservation['status'])) ?>
+                            </strong>
+                        </div>
+
+                    </div>
+
+                    <div class="dashboard-upcoming-actions">
+                        <a
+                            href="reservation-detail.php?id=<?= (int) $nextReservation['reservation_id'] ?>"
+                            class="btn btn-primary"
+                        >
+                            View Detail
+                        </a>
+
+                        <a href="my-reservations.php" class="btn btn-outline">
+                            All Reservations
+                        </a>
+                    </div>
+
+                <?php else: ?>
+
+                    <div class="dashboard-empty-upcoming">
+                        <span class="badge badge-warning">
+                            No Upcoming Reservation
+                        </span>
+
+                        <h3>
+                            You do not have an upcoming active reservation.
+                        </h3>
+
+                        <p>
+                            Browse laboratories and create your first reservation.
+                        </p>
+
+                        <a href="labs.php" class="btn btn-primary">
+                            Explore Laboratories
+                        </a>
+                    </div>
+
+                <?php endif; ?>
+
+            </div>
+
+        </div>
+
+        <!-- ACTIVITY GUIDE -->
+        <div class="card dashboard-guide-card" style="margin-top:32px;">
+
+            <div class="dashboard-section-header">
+                <div>
+                    <h2 style="margin-top:0; margin-bottom:8px;">
+                        Recommended Demo Flow
+                    </h2>
+
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        This flow is useful for presentation and screenshot preparation.
+                    </p>
+                </div>
+
+                <span class="badge badge-info">
+                    Demo Ready
+                </span>
+            </div>
+
+            <div class="dashboard-guide-steps">
+
+                <div>
+                    <span>1</span>
+                    <strong>Browse Labs</strong>
+                    <p>Open the laboratories page and select a lab.</p>
+                </div>
+
+                <div>
+                    <span>2</span>
+                    <strong>Select Station</strong>
+                    <p>Review station and equipment details.</p>
+                </div>
+
+                <div>
+                    <span>3</span>
+                    <strong>Check Availability</strong>
+                    <p>Choose future start and end times.</p>
+                </div>
+
+                <div>
+                    <span>4</span>
+                    <strong>Manage Reservation</strong>
+                    <p>View, edit or cancel from My Reservations.</p>
+                </div>
+
+            </div>
 
         </div>
 

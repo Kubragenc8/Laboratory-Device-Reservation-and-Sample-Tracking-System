@@ -29,57 +29,144 @@ $upcomingReservations = getUpcomingReservationsByStation($pdo, (int) $stationId,
 $pageTitle = 'Station Detail';
 $pageCss = 'labs.css';
 
+function formatStationDetailDateTime(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('d.m.Y H:i');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
+function formatStationDetailTime(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('H:i');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
+function formatStationDetailType(?string $type): string
+{
+    $type = trim((string) $type);
+
+    if ($type === '') {
+        return '-';
+    }
+
+    return ucwords(str_replace('_', ' ', $type));
+}
+
+function stationDetailStatusBadgeClass(string $status): string
+{
+    if ($status === 'active' || $status === 'available') {
+        return 'badge-success';
+    }
+
+    if ($status === 'maintenance' || $status === 'Reserved Now') {
+        return 'badge-warning';
+    }
+
+    if ($status === 'passive' || $status === 'closed') {
+        return 'badge-error';
+    }
+
+    return 'badge-info';
+}
+
+function stationDetailAvailabilityBadgeClass(array $availability): string
+{
+    if (!empty($availability['is_available'])) {
+        return 'badge-success';
+    }
+
+    if (($availability['status_label'] ?? '') === 'Reserved Now') {
+        return 'badge-warning';
+    }
+
+    return 'badge-error';
+}
+
+function stationDetailAvailabilityMessageClass(array $availability): string
+{
+    if (!empty($availability['is_available'])) {
+        return 'alert-success';
+    }
+
+    return 'alert-error';
+}
+
+$currentReservation = $availability['current_reservation'] ?? null;
+
 require_once __DIR__ . '/../includes/header.php';
 
 ?>
 
-<section class="page-section">
+<section class="page-section station-detail-page">
     <div class="container">
 
-        <!-- BACK -->
-        <div style="margin-bottom:24px;">
+        <!-- TOP ACTIONS -->
+        <div class="lab-detail-topbar">
             <a href="lab-detail.php?id=<?= (int) $station['lab_id'] ?>" class="btn btn-outline">
                 ← Back to Laboratory
             </a>
+
+            <?php if ($station['status'] === 'active'): ?>
+                <a
+                    href="reserve.php?lab_id=<?= (int) $station['lab_id'] ?>&station_id=<?= (int) $station['station_id'] ?>"
+                    class="btn btn-primary"
+                >
+                    Reserve This Station
+                </a>
+            <?php else: ?>
+                <button type="button" class="btn btn-secondary" disabled>
+                    Reservation Closed
+                </button>
+            <?php endif; ?>
         </div>
 
         <!-- HERO -->
-        <div class="card" style="margin-bottom:32px;">
-            <div class="grid grid-2" style="align-items:start;">
+        <div class="card station-detail-hero-card" style="margin-bottom:32px;">
+            <div class="station-detail-hero-grid">
 
                 <div>
-                    <p style="color:var(--color-muted); margin-bottom:8px;">
+                    <span class="badge badge-info">
                         <?= htmlspecialchars($station['station_code']) ?>
-                    </p>
+                    </span>
 
-                    <h1 class="section-title" style="margin-bottom:12px;">
+                    <h1 class="section-title" style="margin-bottom:12px; margin-top:16px;">
                         <?= htmlspecialchars($station['station_name']) ?>
                     </h1>
 
-                    <p class="section-subtitle">
+                    <p class="section-subtitle" style="margin-bottom:20px;">
                         <?= nl2br(htmlspecialchars($station['notes'] ?? 'No notes available.')) ?>
                     </p>
 
-                    <?php if ($availability['status_label'] === 'Available'): ?>
-                        <div class="alert alert-success" style="margin-bottom:16px;">
+                    <div class="alert <?= stationDetailAvailabilityMessageClass($availability) ?>" style="margin-bottom:18px;">
+                        <?php if (($availability['status_label'] ?? '') === 'Available'): ?>
                             This station is currently available.
-                        </div>
-                    <?php elseif ($availability['status_label'] === 'Reserved Now'): ?>
-                        <div class="alert alert-error" style="margin-bottom:16px;">
+                        <?php elseif (($availability['status_label'] ?? '') === 'Reserved Now'): ?>
                             This station is currently reserved, but you may still create a reservation for a future available time interval.
-                        </div>
-                    <?php else: ?>
-                        <div class="alert alert-error" style="margin-bottom:16px;">
-                            <?= htmlspecialchars($availability['reason']) ?>
-                        </div>
-                    <?php endif; ?>
+                        <?php else: ?>
+                            <?= htmlspecialchars($availability['reason'] ?? 'This station is not currently available.') ?>
+                        <?php endif; ?>
+                    </div>
 
                     <?php if ($station['status'] === 'active'): ?>
                         <a
                             href="reserve.php?lab_id=<?= (int) $station['lab_id'] ?>&station_id=<?= (int) $station['station_id'] ?>"
                             class="btn btn-primary"
                         >
-                            Reserve This Station
+                            Start Reservation
                         </a>
                     <?php else: ?>
                         <div class="alert alert-error">
@@ -88,214 +175,248 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php endif; ?>
                 </div>
 
-                <div class="card" style="background:var(--color-surface-soft);">
-                    <p>
-                        <strong>Laboratory:</strong>
-                        <?= htmlspecialchars($station['lab_name']) ?>
-                    </p>
+                <div class="station-detail-info-card">
 
-                    <p>
-                        <strong>Lab Code:</strong>
-                        <?= htmlspecialchars($station['lab_code']) ?>
-                    </p>
+                    <div class="station-detail-info-row">
+                        <span>Laboratory</span>
+                        <strong><?= htmlspecialchars($station['lab_name']) ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>Lab Type:</strong>
-                        <?= htmlspecialchars($station['lab_type']) ?>
-                    </p>
+                    <div class="station-detail-info-row">
+                        <span>Lab Code</span>
+                        <strong><?= htmlspecialchars($station['lab_code']) ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>Faculty:</strong>
-                        <?= htmlspecialchars($station['faculty_name']) ?>
-                    </p>
+                    <div class="station-detail-info-row">
+                        <span>Lab Type</span>
+                        <strong><?= htmlspecialchars(formatStationDetailType($station['lab_type'] ?? '')) ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>Department:</strong>
-                        <?= htmlspecialchars($station['department_name']) ?>
-                    </p>
+                    <div class="station-detail-info-row">
+                        <span>Faculty</span>
+                        <strong><?= htmlspecialchars($station['faculty_name']) ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>Location:</strong>
-                        <?= htmlspecialchars($station['location'] ?? '-') ?>
-                    </p>
+                    <div class="station-detail-info-row">
+                        <span>Department</span>
+                        <strong><?= htmlspecialchars($station['department_name']) ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>Station Type:</strong>
-                        <?= htmlspecialchars($station['type_name']) ?>
-                    </p>
+                    <div class="station-detail-info-row">
+                        <span>Location</span>
+                        <strong><?= htmlspecialchars($station['location'] ?? '-') ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>Capacity:</strong>
-                        <?= (int) $station['capacity'] ?>
-                    </p>
+                    <div class="station-detail-info-row">
+                        <span>Station Type</span>
+                        <strong><?= htmlspecialchars($station['type_name']) ?></strong>
+                    </div>
 
-                    <p>
-                        <strong>System Status:</strong>
+                    <div class="station-detail-info-row">
+                        <span>Capacity</span>
+                        <strong><?= (int) $station['capacity'] ?></strong>
+                    </div>
 
-                        <?php if ($station['status'] === 'active'): ?>
-                            <span class="badge badge-success">
-                                Active
+                    <div class="station-detail-info-row">
+                        <span>System Status</span>
+                        <strong>
+                            <span class="badge <?= stationDetailStatusBadgeClass($station['status']) ?>">
+                                <?= htmlspecialchars(ucfirst($station['status'])) ?>
                             </span>
-                        <?php else: ?>
-                            <span class="badge badge-warning">
-                                <?= htmlspecialchars($station['status']) ?>
-                            </span>
-                        <?php endif; ?>
-                    </p>
+                        </strong>
+                    </div>
 
-                    <p>
-                        <strong>Live Availability:</strong>
+                    <div class="station-detail-info-row">
+                        <span>Live Availability</span>
+                        <strong>
+                            <span class="badge <?= stationDetailAvailabilityBadgeClass($availability) ?>">
+                                <?= htmlspecialchars($availability['status_label'] ?? 'Unknown') ?>
+                            </span>
+                        </strong>
+                    </div>
 
-                        <?php if ($availability['is_available']): ?>
-                            <span class="badge badge-success">
-                                <?= htmlspecialchars($availability['status_label']) ?>
-                            </span>
-                        <?php else: ?>
-                            <span class="badge badge-warning">
-                                <?= htmlspecialchars($availability['status_label']) ?>
-                            </span>
-                        <?php endif; ?>
-                    </p>
                 </div>
 
             </div>
         </div>
 
+        <!-- KPI -->
+        <div class="station-detail-kpi-grid" style="margin-bottom:32px;">
+
+            <div class="card card-hover station-detail-kpi-card">
+                <span>Total Equipment</span>
+                <strong><?= (int) $equipmentSummary['total_equipment_count'] ?></strong>
+                <p>All equipment assigned to this station.</p>
+            </div>
+
+            <div class="card card-hover station-detail-kpi-card is-available">
+                <span>Available</span>
+                <strong><?= (int) $equipmentSummary['available_equipment_count'] ?></strong>
+                <p>Equipment currently available for use.</p>
+            </div>
+
+            <div class="card card-hover station-detail-kpi-card is-maintenance">
+                <span>Maintenance</span>
+                <strong><?= (int) $equipmentSummary['maintenance_equipment_count'] ?></strong>
+                <p>Equipment under maintenance.</p>
+            </div>
+
+            <div class="card card-hover station-detail-kpi-card is-passive">
+                <span>Passive</span>
+                <strong><?= (int) $equipmentSummary['passive_equipment_count'] ?></strong>
+                <p>Passive equipment records.</p>
+            </div>
+
+        </div>
+
         <!-- CURRENT RESERVATION -->
-        <?php if (!empty($availability['current_reservation'])): ?>
-            <?php $currentReservation = $availability['current_reservation']; ?>
-
-            <div class="card" style="margin-bottom:32px;">
-                <h2 style="margin-top:0;">Current Active Reservation</h2>
-
-                <div class="grid grid-2">
+        <?php if (!empty($currentReservation)): ?>
+            <div class="card station-detail-section-card" style="margin-bottom:32px;">
+                <div class="lab-detail-section-header">
                     <div>
-                        <p>
-                            <strong>Reservation ID:</strong>
-                            <?= (int) $currentReservation['reservation_id'] ?>
-                        </p>
+                        <h2 style="margin-top:0; margin-bottom:8px;">
+                            Current Active Reservation
+                        </h2>
 
-                        <p>
-                            <strong>User:</strong>
-                            <?= htmlspecialchars($currentReservation['user_full_name']) ?>
-                        </p>
-
-                        <p>
-                            <strong>Email:</strong>
-                            <?= htmlspecialchars($currentReservation['user_email'] ?? '-') ?>
+                        <p class="section-subtitle" style="margin-bottom:0;">
+                            This station is currently reserved in the following time interval.
                         </p>
                     </div>
 
-                    <div>
-                        <p>
-                            <strong>Start Time:</strong>
-                            <?= htmlspecialchars($currentReservation['start_time']) ?>
-                        </p>
+                    <span class="badge badge-warning">
+                        Reserved Now
+                    </span>
+                </div>
 
-                        <p>
-                            <strong>End Time:</strong>
-                            <?= htmlspecialchars($currentReservation['end_time']) ?>
-                        </p>
+                <div class="station-detail-current-grid">
 
-                        <p>
-                            <strong>Purpose:</strong>
-                            <?= htmlspecialchars($currentReservation['purpose'] ?? '-') ?>
-                        </p>
+                    <div class="station-detail-info-row">
+                        <span>Reservation ID</span>
+                        <strong>#<?= (int) $currentReservation['reservation_id'] ?></strong>
                     </div>
+
+                    <div class="station-detail-info-row">
+                        <span>User</span>
+                        <strong><?= htmlspecialchars($currentReservation['user_full_name']) ?></strong>
+                    </div>
+
+                    <div class="station-detail-info-row">
+                        <span>Email</span>
+                        <strong><?= htmlspecialchars($currentReservation['user_email'] ?? '-') ?></strong>
+                    </div>
+
+                    <div class="station-detail-info-row">
+                        <span>Start Time</span>
+                        <strong><?= htmlspecialchars(formatStationDetailDateTime($currentReservation['start_time'])) ?></strong>
+                    </div>
+
+                    <div class="station-detail-info-row">
+                        <span>End Time</span>
+                        <strong><?= htmlspecialchars(formatStationDetailDateTime($currentReservation['end_time'])) ?></strong>
+                    </div>
+
+                    <div class="station-detail-info-row">
+                        <span>Purpose</span>
+                        <strong><?= htmlspecialchars($currentReservation['purpose'] ?? '-') ?></strong>
+                    </div>
+
                 </div>
             </div>
         <?php endif; ?>
 
-        <!-- EQUIPMENT SUMMARY -->
-        <div class="card" style="margin-bottom:32px;">
-            <h2 style="margin-top:0;">Equipment Summary</h2>
+        <!-- EQUIPMENT LIST -->
+        <div class="card station-detail-section-card" style="margin-bottom:32px;">
+            <div class="lab-detail-section-header">
+                <div>
+                    <h2 style="margin-top:0; margin-bottom:8px;">
+                        Equipment in This Station
+                    </h2>
 
-            <div class="grid grid-4">
-                <div class="card" style="background:var(--color-surface-soft);">
-                    <p style="margin-bottom:8px;">Total Equipment</p>
-                    <h3 style="margin:0;">
-                        <?= (int) $equipmentSummary['total_equipment_count'] ?>
-                    </h3>
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        Devices and physical equipment assigned to this workstation.
+                    </p>
                 </div>
 
-                <div class="card" style="background:var(--color-surface-soft);">
-                    <p style="margin-bottom:8px;">Available</p>
-                    <h3 style="margin:0;">
-                        <?= (int) $equipmentSummary['available_equipment_count'] ?>
-                    </h3>
-                </div>
-
-                <div class="card" style="background:var(--color-surface-soft);">
-                    <p style="margin-bottom:8px;">Maintenance</p>
-                    <h3 style="margin:0;">
-                        <?= (int) $equipmentSummary['maintenance_equipment_count'] ?>
-                    </h3>
-                </div>
-
-                <div class="card" style="background:var(--color-surface-soft);">
-                    <p style="margin-bottom:8px;">Passive</p>
-                    <h3 style="margin:0;">
-                        <?= (int) $equipmentSummary['passive_equipment_count'] ?>
-                    </h3>
-                </div>
+                <span class="badge badge-info">
+                    <?= count($equipmentList) ?> Item<?= count($equipmentList) === 1 ? '' : 's' ?>
+                </span>
             </div>
-        </div>
-
-        <!-- EQUIPMENT -->
-        <div class="card" style="margin-bottom:32px;">
-            <h2 style="margin-top:0;">Equipment in This Station</h2>
 
             <?php if (count($equipmentList) > 0): ?>
-                <div class="table-wrapper">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Asset Code</th>
-                                <th>Equipment</th>
-                                <th>Category</th>
-                                <th>Brand</th>
-                                <th>Model</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
+                <div class="station-detail-equipment-grid">
 
-                        <tbody>
-                            <?php foreach ($equipmentList as $equipment): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($equipment['asset_code']) ?></td>
-                                    <td><?= htmlspecialchars($equipment['equipment_name']) ?></td>
-                                    <td><?= htmlspecialchars($equipment['category']) ?></td>
-                                    <td><?= htmlspecialchars($equipment['brand'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($equipment['model'] ?? '-') ?></td>
-                                    <td>
-                                        <?php if ($equipment['status'] === 'available'): ?>
-                                            <span class="badge badge-success">
-                                                Available
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="badge badge-warning">
-                                                <?= htmlspecialchars($equipment['status']) ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <?php foreach ($equipmentList as $equipment): ?>
+                        <?php
+                        $equipmentStatus = $equipment['status'] ?? 'unknown';
+                        ?>
+
+                        <article class="station-detail-equipment-card">
+                            <div>
+                                <span class="lab-code">
+                                    <?= htmlspecialchars($equipment['asset_code']) ?>
+                                </span>
+
+                                <h3>
+                                    <?= htmlspecialchars($equipment['equipment_name']) ?>
+                                </h3>
+
+                                <p>
+                                    <?= htmlspecialchars($equipment['category']) ?>
+                                </p>
+                            </div>
+
+                            <div class="station-detail-equipment-meta">
+                                <div>
+                                    <span>Brand</span>
+                                    <strong><?= htmlspecialchars($equipment['brand'] ?? '-') ?></strong>
+                                </div>
+
+                                <div>
+                                    <span>Model</span>
+                                    <strong><?= htmlspecialchars($equipment['model'] ?? '-') ?></strong>
+                                </div>
+
+                                <div>
+                                    <span>Status</span>
+                                    <strong>
+                                        <span class="badge <?= stationDetailStatusBadgeClass($equipmentStatus) ?>">
+                                            <?= htmlspecialchars(ucfirst($equipmentStatus)) ?>
+                                        </span>
+                                    </strong>
+                                </div>
+                            </div>
+                        </article>
+
+                    <?php endforeach; ?>
+
                 </div>
             <?php else: ?>
-                <div class="alert alert-success">
+                <div class="alert alert-success" style="margin-bottom:0;">
                     No equipment found for this station.
                 </div>
             <?php endif; ?>
         </div>
 
         <!-- UPCOMING -->
-        <div class="card">
-            <h2 style="margin-top:0;">Upcoming Active Reservations</h2>
+        <div class="card station-detail-section-card">
+            <div class="lab-detail-section-header">
+                <div>
+                    <h2 style="margin-top:0; margin-bottom:8px;">
+                        Upcoming Active Reservations
+                    </h2>
+
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        Future active reservations for this station.
+                    </p>
+                </div>
+
+                <span class="badge badge-info">
+                    <?= count($upcomingReservations) ?> Record<?= count($upcomingReservations) === 1 ? '' : 's' ?>
+                </span>
+            </div>
 
             <?php if (count($upcomingReservations) > 0): ?>
-                <div class="table-wrapper">
+                <div class="table-wrapper lab-detail-table-wrapper">
                     <table class="table">
                         <thead>
                             <tr>
@@ -311,23 +432,23 @@ require_once __DIR__ . '/../includes/header.php';
                         <tbody>
                             <?php foreach ($upcomingReservations as $reservation): ?>
                                 <tr>
-                                    <td><?= (int) $reservation['reservation_id'] ?></td>
+                                    <td>#<?= (int) $reservation['reservation_id'] ?></td>
 
                                     <td>
                                         <?= htmlspecialchars($reservation['user_full_name']) ?>
                                     </td>
 
                                     <td>
-                                        <?= htmlspecialchars($reservation['start_time']) ?>
+                                        <?= htmlspecialchars(formatStationDetailDateTime($reservation['start_time'])) ?>
                                     </td>
 
                                     <td>
-                                        <?= htmlspecialchars($reservation['end_time']) ?>
+                                        <?= htmlspecialchars(formatStationDetailDateTime($reservation['end_time'])) ?>
                                     </td>
 
                                     <td>
                                         <span class="badge badge-success">
-                                            <?= htmlspecialchars($reservation['status']) ?>
+                                            <?= htmlspecialchars(ucfirst($reservation['status'])) ?>
                                         </span>
                                     </td>
 
@@ -340,7 +461,7 @@ require_once __DIR__ . '/../includes/header.php';
                     </table>
                 </div>
             <?php else: ?>
-                <div class="alert alert-success">
+                <div class="alert alert-success" style="margin-bottom:0;">
                     No upcoming active reservation found for this station.
                 </div>
             <?php endif; ?>

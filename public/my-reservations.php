@@ -38,6 +38,32 @@ function formatReservationDateTime(?string $value): string
     }
 }
 
+function formatReservationDate(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('d.m.Y');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
+function formatReservationTime(?string $value): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        return (new DateTime($value))->format('H:i');
+    } catch (Exception $e) {
+        return $value;
+    }
+}
+
 function reservationBadgeClass(string $status): string
 {
     if ($status === 'active') {
@@ -45,14 +71,28 @@ function reservationBadgeClass(string $status): string
     }
 
     if ($status === 'cancelled') {
-        return 'badge-warning';
+        return 'badge-error';
     }
 
     if ($status === 'completed') {
-        return 'badge-secondary';
+        return 'badge-info';
     }
 
-    return 'badge-secondary';
+    return 'badge-warning';
+}
+
+function reservationStatusLabel(string $status): string
+{
+    return ucfirst($status);
+}
+
+function statusFilterLabel(string $status): string
+{
+    if ($status === 'all') {
+        return 'All Reservations';
+    }
+
+    return ucfirst($status) . ' Reservations';
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -110,7 +150,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 syncExpiredReservations($pdo);
 
 $reservations = getUserReservations($pdo, (int) $userId, $statusFilter);
-
 $allReservationsForKpi = getUserReservations($pdo, (int) $userId, 'all');
 
 $activeCount = 0;
@@ -127,22 +166,45 @@ foreach ($allReservationsForKpi as $reservation) {
     }
 }
 
+$totalCount = count($allReservationsForKpi);
+$visibleCount = count($reservations);
+
 require_once __DIR__ . '/../includes/header.php';
 
 ?>
 
-<section class="page-section">
+<section class="page-section" data-my-reservations-page="true">
     <div class="container">
 
         <!-- HERO -->
-        <div class="card" style="margin-bottom:32px;">
-            <h1 class="section-title" style="margin-bottom:8px;">
-                My Reservations
-            </h1>
+        <div class="card my-reservations-hero-card" style="margin-bottom:32px;">
+            <div class="my-reservations-hero-content">
 
-            <p class="section-subtitle" style="margin-bottom:0;">
-                Track, manage and review your full laboratory reservation history.
-            </p>
+                <div>
+                    <span class="badge badge-info">
+                        Reservation Center
+                    </span>
+
+                    <h1 class="section-title" style="margin-bottom:8px; margin-top:16px;">
+                        My Reservations
+                    </h1>
+
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        Track, manage and review your full laboratory reservation history.
+                    </p>
+                </div>
+
+                <div class="my-reservations-hero-actions">
+                    <a href="reserve.php" class="btn btn-primary">
+                        New Reservation
+                    </a>
+
+                    <a href="labs.php" class="btn btn-outline">
+                        Browse Laboratories
+                    </a>
+                </div>
+
+            </div>
         </div>
 
         <!-- MESSAGE -->
@@ -156,198 +218,273 @@ require_once __DIR__ . '/../includes/header.php';
         <?php endif; ?>
 
         <!-- KPI -->
-        <div class="grid grid-3" style="margin-bottom:32px;">
-            <div class="card card-hover">
-                <h3>Active</h3>
+        <div class="my-reservations-kpi-grid" style="margin-bottom:32px;">
 
-                <p style="font-size:36px; font-weight:700; margin:0; color:var(--color-primary);">
+            <div class="card card-hover my-reservation-kpi-card">
+                <span class="my-reservation-kpi-label">Total</span>
+
+                <strong>
+                    <?= (int) $totalCount ?>
+                </strong>
+
+                <p>All reservation records</p>
+            </div>
+
+            <div class="card card-hover my-reservation-kpi-card is-active">
+                <span class="my-reservation-kpi-label">Active</span>
+
+                <strong>
                     <?= (int) $activeCount ?>
-                </p>
+                </strong>
+
+                <p>Upcoming or currently valid reservations</p>
             </div>
 
-            <div class="card card-hover">
-                <h3>Cancelled</h3>
+            <div class="card card-hover my-reservation-kpi-card is-cancelled">
+                <span class="my-reservation-kpi-label">Cancelled</span>
 
-                <p style="font-size:36px; font-weight:700; margin:0;">
+                <strong>
                     <?= (int) $cancelledCount ?>
-                </p>
+                </strong>
+
+                <p>Cancelled reservation records</p>
             </div>
 
-            <div class="card card-hover">
-                <h3>Completed</h3>
+            <div class="card card-hover my-reservation-kpi-card is-completed">
+                <span class="my-reservation-kpi-label">Completed</span>
 
-                <p style="font-size:36px; font-weight:700; margin:0;">
+                <strong>
                     <?= (int) $completedCount ?>
-                </p>
+                </strong>
+
+                <p>Past completed reservations</p>
             </div>
+
         </div>
 
         <!-- FILTER -->
-        <div class="card" style="margin-bottom:32px;">
-            <h2 style="margin-top:0;">Filter Reservations</h2>
+        <div class="card my-reservations-filter-card" style="margin-bottom:32px;">
+            <div class="my-reservations-filter-header">
+                <div>
+                    <h2 style="margin-top:0; margin-bottom:8px;">
+                        Filter Reservations
+                    </h2>
 
-            <div class="flex" style="gap:12px; flex-wrap:wrap;">
+                    <p class="section-subtitle" style="margin-bottom:0;">
+                        Showing <?= (int) $visibleCount ?> result<?= $visibleCount === 1 ? '' : 's' ?> for:
+                        <strong><?= htmlspecialchars(statusFilterLabel($statusFilter)) ?></strong>
+                    </p>
+                </div>
+
+                <span class="badge <?= reservationBadgeClass($statusFilter === 'all' ? 'active' : $statusFilter) ?>">
+                    <?= htmlspecialchars(statusFilterLabel($statusFilter)) ?>
+                </span>
+            </div>
+
+            <div class="my-reservations-tabs">
                 <a
                     href="my-reservations.php?status=all"
-                    class="btn <?= $statusFilter === 'all' ? 'btn-primary' : 'btn-outline' ?>"
+                    class="my-reservations-tab <?= $statusFilter === 'all' ? 'is-active' : '' ?>"
                 >
                     All
+                    <span><?= (int) $totalCount ?></span>
                 </a>
 
                 <a
                     href="my-reservations.php?status=active"
-                    class="btn <?= $statusFilter === 'active' ? 'btn-primary' : 'btn-outline' ?>"
+                    class="my-reservations-tab <?= $statusFilter === 'active' ? 'is-active' : '' ?>"
                 >
                     Active
+                    <span><?= (int) $activeCount ?></span>
                 </a>
 
                 <a
                     href="my-reservations.php?status=cancelled"
-                    class="btn <?= $statusFilter === 'cancelled' ? 'btn-primary' : 'btn-outline' ?>"
+                    class="my-reservations-tab <?= $statusFilter === 'cancelled' ? 'is-active' : '' ?>"
                 >
                     Cancelled
+                    <span><?= (int) $cancelledCount ?></span>
                 </a>
 
                 <a
                     href="my-reservations.php?status=completed"
-                    class="btn <?= $statusFilter === 'completed' ? 'btn-primary' : 'btn-outline' ?>"
+                    class="my-reservations-tab <?= $statusFilter === 'completed' ? 'is-active' : '' ?>"
                 >
                     Completed
+                    <span><?= (int) $completedCount ?></span>
                 </a>
             </div>
         </div>
 
         <!-- LIST -->
         <?php if (count($reservations) > 0): ?>
-            <div class="card">
-                <h2 style="margin-top:0;">Reservation List</h2>
 
-                <div class="table-wrapper">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Laboratory</th>
-                                <th>Station</th>
-                                <th>Start</th>
-                                <th>End</th>
-                                <th>Status</th>
-                                <th>Purpose</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
+            <div class="my-reservation-card-grid">
 
-                        <tbody>
-                            <?php foreach ($reservations as $reservation): ?>
-                                <?php
-                                $canCancel =
-                                    $reservation['status'] === 'active'
-                                    && isFutureReservation($reservation['start_time']);
-                                ?>
+                <?php foreach ($reservations as $reservation): ?>
+                    <?php
+                    $canCancel =
+                        $reservation['status'] === 'active'
+                        && isFutureReservation($reservation['start_time']);
 
-                                <tr>
-                                    <td>
-                                        <?= (int) $reservation['reservation_id'] ?>
-                                    </td>
+                    $canEdit = $canCancel;
 
-                                    <td>
-                                        <strong>
-                                            <?= htmlspecialchars($reservation['lab_code']) ?>
-                                        </strong>
+                    $status = $reservation['status'];
+                    $purpose = trim($reservation['purpose'] ?? '');
+                    ?>
 
-                                        <br>
+                    <article class="card card-hover my-reservation-card">
 
-                                        <span style="color:var(--color-muted);">
-                                            <?= htmlspecialchars($reservation['lab_name']) ?>
-                                        </span>
-                                    </td>
+                        <div class="my-reservation-card-header">
 
-                                    <td>
-                                        <strong>
-                                            <?= htmlspecialchars($reservation['station_code']) ?>
-                                        </strong>
+                            <div>
+                                <span class="my-reservation-id">
+                                    #<?= (int) $reservation['reservation_id'] ?>
+                                </span>
 
-                                        <br>
+                                <h3 class="my-reservation-title">
+                                    <?= htmlspecialchars($reservation['lab_code']) ?>
+                                    —
+                                    <?= htmlspecialchars($reservation['lab_name']) ?>
+                                </h3>
+                            </div>
 
-                                        <span style="color:var(--color-muted);">
-                                            <?= htmlspecialchars($reservation['station_name']) ?>
-                                        </span>
-                                    </td>
+                            <span class="badge <?= reservationBadgeClass($status) ?>">
+                                <?= htmlspecialchars(reservationStatusLabel($status)) ?>
+                            </span>
 
-                                    <td>
-                                        <?= htmlspecialchars(formatReservationDateTime($reservation['start_time'])) ?>
-                                    </td>
+                        </div>
 
-                                    <td>
-                                        <?= htmlspecialchars(formatReservationDateTime($reservation['end_time'])) ?>
-                                    </td>
+                        <div class="my-reservation-time-panel">
+                            <div>
+                                <span>Date</span>
+                                <strong>
+                                    <?= htmlspecialchars(formatReservationDate($reservation['start_time'])) ?>
+                                </strong>
+                            </div>
 
-                                    <td>
-                                        <span class="badge <?= reservationBadgeClass($reservation['status']) ?>">
-                                            <?= htmlspecialchars(ucfirst($reservation['status'])) ?>
-                                        </span>
-                                    </td>
+                            <div>
+                                <span>Time</span>
+                                <strong>
+                                    <?= htmlspecialchars(formatReservationTime($reservation['start_time'])) ?>
+                                    —
+                                    <?= htmlspecialchars(formatReservationTime($reservation['end_time'])) ?>
+                                </strong>
+                            </div>
+                        </div>
 
-                                    <td>
-                                        <?= htmlspecialchars($reservation['purpose'] ?? '-') ?>
-                                    </td>
+                        <div class="my-reservation-meta">
 
-                                    <td>
-                                        <div class="flex" style="gap:8px; flex-wrap:wrap;">
-                                            <a
-                                                href="reservation-detail.php?id=<?= (int) $reservation['reservation_id'] ?>"
-                                                class="btn btn-outline"
-                                            >
-                                                View
-                                            </a>
+                            <div class="my-reservation-meta-row">
+                                <span>Station</span>
 
-                                            <?php if ($canCancel): ?>
-                                                <form
-                                                    method="POST"
-                                                    action="my-reservations.php?status=<?= htmlspecialchars($statusFilter) ?>"
-                                                    onsubmit="return confirm('Are you sure you want to cancel this reservation?');"
-                                                    style="margin:0;"
-                                                >
-                                                    <input
-                                                        type="hidden"
-                                                        name="reservation_id"
-                                                        value="<?= (int) $reservation['reservation_id'] ?>"
-                                                    >
+                                <strong>
+                                    <?= htmlspecialchars($reservation['station_code']) ?>
+                                    —
+                                    <?= htmlspecialchars($reservation['station_name']) ?>
+                                </strong>
+                            </div>
 
-                                                    <button
-                                                        type="submit"
-                                                        name="action"
-                                                        value="cancel"
-                                                        class="btn btn-secondary"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </form>
-                                            <?php else: ?>
-                                                <span style="color:var(--color-muted);">
-                                                    -
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+                            <div class="my-reservation-meta-row">
+                                <span>Start</span>
+
+                                <strong>
+                                    <?= htmlspecialchars(formatReservationDateTime($reservation['start_time'])) ?>
+                                </strong>
+                            </div>
+
+                            <div class="my-reservation-meta-row">
+                                <span>End</span>
+
+                                <strong>
+                                    <?= htmlspecialchars(formatReservationDateTime($reservation['end_time'])) ?>
+                                </strong>
+                            </div>
+
+                            <div class="my-reservation-meta-row">
+                                <span>Purpose</span>
+
+                                <strong>
+                                    <?= htmlspecialchars($purpose !== '' ? $purpose : '-') ?>
+                                </strong>
+                            </div>
+
+                        </div>
+
+                        <div class="my-reservation-actions">
+
+                            <a
+                                href="reservation-detail.php?id=<?= (int) $reservation['reservation_id'] ?>"
+                                class="btn btn-outline"
+                            >
+                                View Detail
+                            </a>
+
+                            <?php if ($canEdit): ?>
+                                <a
+                                    href="reservation-edit.php?id=<?= (int) $reservation['reservation_id'] ?>"
+                                    class="btn btn-secondary"
+                                >
+                                    Edit
+                                </a>
+                            <?php endif; ?>
+
+                            <?php if ($canCancel): ?>
+                                <form
+                                    method="POST"
+                                    action="my-reservations.php?status=<?= htmlspecialchars($statusFilter) ?>"
+                                    onsubmit="return confirm('Are you sure you want to cancel this reservation?');"
+                                    class="my-reservation-cancel-form"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="reservation_id"
+                                        value="<?= (int) $reservation['reservation_id'] ?>"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        name="action"
+                                        value="cancel"
+                                        class="btn btn-danger-soft"
+                                    >
+                                        Cancel
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+
+                        </div>
+
+                    </article>
+
+                <?php endforeach; ?>
+
             </div>
+
         <?php else: ?>
-            <div class="card labs-empty">
+
+            <div class="card my-reservations-empty-state">
+                <span class="badge badge-warning">
+                    No Reservation
+                </span>
+
                 <h3>No reservation found.</h3>
 
                 <p class="section-subtitle">
                     Start by creating your first laboratory reservation.
                 </p>
 
-                <a href="reserve.php" class="btn btn-primary">
-                    Create Reservation
-                </a>
+                <div class="my-reservations-empty-actions">
+                    <a href="reserve.php" class="btn btn-primary">
+                        Create Reservation
+                    </a>
+
+                    <a href="labs.php" class="btn btn-outline">
+                        Browse Laboratories
+                    </a>
+                </div>
             </div>
+
         <?php endif; ?>
 
     </div>
